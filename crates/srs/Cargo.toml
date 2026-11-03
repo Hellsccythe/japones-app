@@ -1,0 +1,15 @@
+[package]
+name = "srs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+rusqlite = { workspace = true, features = ["backup"] }
+zip.workspace = true
+fsrs = "6.6"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

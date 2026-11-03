@@ -1,0 +1,18 @@
+[package]
+name = "pdf"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+typst-as-lib.workspace = true
+typst.workspace = true
+typst-layout.workspace = true
+typst-pdf.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+jp-core.workspace = true
+
+[dev-dependencies]
+typst-render = "0.15"

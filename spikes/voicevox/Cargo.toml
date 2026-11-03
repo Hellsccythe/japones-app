@@ -1,0 +1,11 @@
+# Fase 0 spike: VOICEVOX CORE embutido (sem o ENGINE), ONNX Runtime oficial da Microsoft.
+[package]
+name = "spike-voicevox"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[dependencies]
+anyhow = "1"
+voicevox_core = { git = "https://github.com/VOICEVOX/voicevox_core", tag = "0.17.1", features = ["load-onnxruntime"] }

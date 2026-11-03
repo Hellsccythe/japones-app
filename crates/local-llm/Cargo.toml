@@ -1,0 +1,12 @@
+[package]
+name = "local-llm"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+llama-cpp-2.workspace = true
+sentences.workspace = true

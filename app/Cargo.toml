@@ -1,0 +1,37 @@
+[package]
+name = "japones-app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+# Tauri mobile loads the app as a shared library.
+name = "japones_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[features]
+# Serves the bundled ui/ instead of a dev server. The Tauri CLI enables it for
+# release builds; it's on by default so plain `cargo run`/`cargo build` work too.
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]
+# Web inspector in release builds (e.g. chrome://inspect on Android). Testing only.
+devtools = ["tauri/devtools"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+# Opens the content:// URIs that the Android file picker returns.
+tauri-plugin-fs = "2"
+tauri-plugin-opener = "2"
+serde.workspace = true
+serde_json.workspace = true
+base64.workspace = true
+engine.workspace = true
+jp-core.workspace = true
+tts.workspace = true
+srs.workspace = true
+anyhow.workspace = true

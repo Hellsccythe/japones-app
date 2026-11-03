@@ -1,0 +1,162 @@
+# Builds the Windows installer and the Android APK. A `v*` tag (matching the
+# version in app/tauri.conf.json) also publishes them as a GitHub Release, with
+# the notes from that version's section of CHANGELOG.md. Running it by hand
+# (Actions › Release › Run workflow) only builds, for testing.
+#
+# Android signing secrets (Settings › Secrets and variables › Actions):
+#   ANDROID_KEYSTORE_BASE64   the .jks keystore, base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD store and key password
+#   ANDROID_KEY_ALIAS         key alias
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+  NDK_VERSION: 28.2.13676358
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Check tag and versions
+        run: |
+          app=$(jq -r .version app/tauri.conf.json)
+          cargo=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
+          [ "$app" = "$cargo" ] || { echo "::error::tauri.conf.json ($app) e Cargo.toml ($cargo) com versões diferentes"; exit 1; }
+          if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$app" ]; then
+            echo "::error::A tag $GITHUB_REF_NAME não bate com a versão $app"; exit 1
+          fi
+          grep -q "^## \[$app\]" CHANGELOG.md || { echo "::error::CHANGELOG.md não tem a seção ## [$app]"; exit 1; }
+          echo "version=$app" >> "$GITHUB_OUTPUT"
+
+  windows:
+    needs: version
+    runs-on: windows-latest
+    env:
+      # bindgen (llama.cpp bindings) needs libclang; the runner ships LLVM.
+      LIBCLANG_PATH: C:\Program Files\LLVM\bin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows
+      - name: Build installer
+        working-directory: app
+        run: |
+          npm ci
+          npm run tauri -- build
+      - name: Rename
+        shell: bash
+        run: |
+          mkdir dist
+          cp target/release/bundle/nsis/*-setup.exe "dist/Japones-App_${{ needs.version.outputs.version }}_windows-x64-setup.exe"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/*
+          if-no-files-found: error
+
+  android:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - name: Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" "platforms;android-37" > /dev/null
+          echo "NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+          echo "ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/$NDK_VERSION" >> "$GITHUB_ENV"
+      - run: rustup toolchain install stable --profile minimal --target aarch64-linux-android
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: android
+      - name: Signing key
+        env:
+          KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE" ]; then
+            if [ "$GITHUB_REF_TYPE" = tag ]; then echo "::error::Faltam os secrets de assinatura do Android"; exit 1; fi
+            echo "::warning::Sem secrets de assinatura: o APK sai sem assinatura (não instala)."
+            exit 0
+          fi
+          echo "$KEYSTORE" | base64 -d > app/gen/android/release.jks
+          printf 'storeFile=release.jks\npassword=%s\nkeyAlias=%s\n' "$PASSWORD" "$ALIAS" > app/gen/android/keystore.properties
+      - name: Build APK
+        working-directory: app
+        env:
+          # C/C++ dependencies (llama.cpp, Open JTalk) are built with CMake for API 24.
+          ANDROID_PLATFORM: "24"
+        run: |
+          # CMake doesn't find the NDK compilers by itself.
+          bin="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          export CC_aarch64_linux_android="$bin/aarch64-linux-android24-clang"
+          export CXX_aarch64_linux_android="$bin/aarch64-linux-android24-clang++"
+          export AR_aarch64_linux_android="$bin/llvm-ar"
+          npm ci
+          npm run tauri -- android build --apk --target aarch64
+      - name: Rename
+        run: |
+          mkdir dist
+          apk=$(find app/gen/android/app/build/outputs/apk -name '*-release*.apk' | head -1)
+          cp "$apk" "dist/Japones-App_${{ needs.version.outputs.version }}_android-arm64.apk"
+          rm -f app/gen/android/release.jks app/gen/android/keystore.properties
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    if: github.ref_type == 'tag'
+    needs: [version, windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          # Notes: this version's CHANGELOG section, without its heading.
+          awk -v v="## [$VERSION]" 'index($0, v) == 1 { on = 1; next } /^## \[/ { on = 0 } on' CHANGELOG.md > notes.md
+          cat >> notes.md <<'EOF'
+
+          ---
+          **Windows:** baixe o `windows-x64-setup.exe`. Como o instalador não tem assinatura de código paga, o Windows pode mostrar "O Windows protegeu o computador": clique em *Mais informações › Executar assim mesmo*.
+          **Android:** baixe o `.apk` no celular e permita instalar de fontes desconhecidas. Funciona em aparelhos ARM 64 bits (Android 7 ou mais novo).
+          Na primeira vez, o app mostra o que baixar (frases, dicionário, voz e IA) e o tamanho de cada item.
+          EOF
+          gh release create "$GITHUB_REF_NAME" dist/* --title "Japonês App $VERSION" --notes-file notes.md

@@ -1,0 +1,12 @@
+{
+  "name": "japones-app",
+  "private": true,
+  "description": "Only the Tauri CLI (the Android Gradle build calls `npm run tauri`).",
+  "license": "MIT OR Apache-2.0",
+  "scripts": {
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

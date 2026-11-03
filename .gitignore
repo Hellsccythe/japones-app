@@ -1,0 +1,27 @@
+/target
+/data
+*.apkg
+*.pdf
+*.wav
+
+# Android project: committed, except build output and native libraries
+# (the Rust build and Gradle put those in jniLibs).
+app/gen/android/app/src/main/jniLibs/
+app/gen/android/buildSrc/build/
+app/gen/android/buildSrc/.gradle/
+app/gen/android/.kotlin/
+
+# Signing keys never go in the repository (CI gets them from secrets).
+*.jks
+*.keystore
+keystore.properties
+
+# Experiments: build output, logs and model outputs.
+spikes/**/target/
+spikes/*.log
+spikes/*.done
+spikes/llm/*.jsonl
+spikes/llm/results/
+
+# Tauri CLI from npm
+node_modules/
