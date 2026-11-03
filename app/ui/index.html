@@ -138,6 +138,24 @@
     <section id="tab-config" class="panel">
       <form id="settings" class="settings">
         <button type="button" id="openSetup" class="link">Primeiros passos (o que baixar)</button>
+        <fieldset id="appearanceBox">
+          <legend>Aparência</legend>
+          <label>Tema
+            <select name="theme">
+              <option value="system">Igual ao sistema</option>
+              <option value="light">Claro</option>
+              <option value="dark">Escuro</option>
+            </select>
+          </label>
+          <label class="inline"><input type="checkbox" name="pos_colors_on"> Cores por classe de palavra</label>
+          <label>Tamanho do japonês
+            <select name="jp_font_size">
+              <option value="small">Pequeno</option>
+              <option value="medium">Médio</option>
+              <option value="large">Grande</option>
+            </select>
+          </label>
+        </fieldset>
         <fieldset id="iaBox">
           <legend>IA (geração de frases)</legend>
           <label>Usar
@@ -265,6 +283,6 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

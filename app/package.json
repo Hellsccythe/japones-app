@@ -3,6 +3,7 @@
   "private": true,
   "description": "Only the Tauri CLI (the Android Gradle build calls `npm run tauri`).",
   "license": "MIT OR Apache-2.0",
+  "type": "module",
   "scripts": {
     "tauri": "tauri"
   },

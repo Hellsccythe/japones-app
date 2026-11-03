@@ -15,7 +15,7 @@ use tts::embedded::EmbeddedTts;
 use jp_core::{Analyzer, Segment};
 use serde::{Deserialize, Serialize};
 
-pub use settings::Settings;
+pub use settings::{PosColors, Settings};
 pub use sentences::{Example, Source};
 
 /// An example sentence plus everything the UI needs to show it.
@@ -190,7 +190,9 @@ impl Engine {
 
     fn llm_ready(&self) -> bool {
         let s = self.settings();
-        if s.uses_claude() {
+        if s.llm_off() {
+            false
+        } else if s.uses_claude() {
             s.api_key().is_some()
         } else {
             local_llm::find(&s.local_model).is_some_and(|m| self.model_path(m).exists())
@@ -199,7 +201,9 @@ impl Engine {
 
     fn llm_name(&self) -> String {
         let s = self.settings();
-        if s.uses_claude() {
+        if s.llm_off() {
+            "desligada".into()
+        } else if s.uses_claude() {
             "Claude".into()
         } else {
             local_llm::find(&s.local_model).map_or("IA local".into(), |m| m.name.to_string())
@@ -296,6 +300,9 @@ impl Engine {
             level: s.level.clone(),
             translation_language: s.translation_language_name.clone(),
         };
+        if s.llm_off() {
+            bail!("A IA está desligada nas configurações");
+        }
         if s.uses_claude() {
             let key = s
                 .api_key()
