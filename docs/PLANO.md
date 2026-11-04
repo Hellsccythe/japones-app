@@ -186,6 +186,16 @@ Achados para a fase 1:
 - [ ] (Opcional) Assinatura de código no Windows para evitar o aviso do SmartScreen. É paga; sem ela o app funciona, mas mostra o aviso (as notas da release explicam como passar).
 - [ ] Criar o repositório no GitHub, cadastrar os secrets e enviar a primeira tag (passo a passo no README, "Publicar uma versão").
 
+### Fase 6: interface v2
+Spec: `docs/superpowers/specs/2026-11-03-interface-v2-design.md`; plano: `docs/superpowers/plans/2026-11-03-interface-v2.md`.
+- [x] Tokens de tema Sumi (claro/escuro/sistema), ícones Lucide inline (ISC) e `app.js` dividido em módulos ES em `app/ui/js/`.
+- [x] Navegação lateral (barra inferior no celular), indicador de estado e Configurações em seções com salvamento automático; **Testar conexão** do AnkiConnect com os erros distinguidos (`anki:not_running`, `anki:no_addon`, `anki:incompatible`).
+- [x] Classe de cada palavra (`jp-core::WordClass`, a partir do IPADIC) e vocabulário da frase (`engine::vocabulary`); aba Frases com cores por classe, detalhamento, Copiar e barra de seleção.
+- [x] Tradução do vocabulário com a IA configurada (JSON Schema, cache em `vocab_gloss` no `japones.db`) e cores personalizáveis por tema.
+- [x] Instalar o recomendado (modelo escolhido pela RAM com `sysinfo`, MIT), pausar/continuar downloads e configuração rápida quando falta algo; teste da chave do Claude (`GET /v1/models`, sem custo).
+- [x] Estudar e Texto com as cores por classe; licença dos ícones nos avisos de terceiros.
+- [ ] Revisão manual no Windows e no emulador Android (layout de celular, dois temas).
+
 ---
 
 ## 5. Riscos e o que fazer se falharem

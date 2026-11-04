@@ -12,6 +12,7 @@ Ele inclui ou baixa os componentes abaixo, cada um com a sua licença.
 | VOICEVOX CORE 0.17 (via crate `voicevox_core`) | MIT | idem |
 | Dicionário mecab-ipadic 2.7.0 (embutido pelo `lindera-ipadic`) | Aviso da NAIST/ICOT, abaixo | leituras e furigana |
 | Noto Serif JP (subset embutido nos PDFs) | SIL Open Font License 1.1, abaixo | `crates/pdf/fonts/` |
+| Ícones no estilo [Lucide](https://lucide.dev) (desenhos de linha, em SVG inline) | ISC, abaixo | `app/ui/js/icons.js` |
 
 ## Baixados pelo usuário dentro do app (não estão no repositório nem no instalador)
 
@@ -208,4 +209,28 @@ INCLUDING ANY GENERAL, SPECIAL, INDIRECT, INCIDENTAL, OR CONSEQUENTIAL
 DAMAGES, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
 FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
+```
+
+---
+
+## Lucide (ícones)
+
+Os ícones da interface seguem os desenhos do Lucide, redesenhados como paths SVG em `app/ui/js/icons.js`.
+
+```
+ISC License
+
+Copyright (c) for portions of Lucide are held by Cole Bemis 2013-2022 as part of Feather (MIT). All other copyright (c) for Lucide are held by Lucide Contributors 2022.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 ```

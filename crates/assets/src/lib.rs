@@ -6,6 +6,7 @@
 use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use anyhow::{bail, Context, Result};
 use reqwest::{header, StatusCode};
@@ -17,6 +18,28 @@ pub struct Asset<'a> {
     pub size: u64,
     /// Lowercase hex.
     pub sha256: &'a str,
+}
+
+/// Bumped by [`cancel_downloads`]; a download started under another value stops.
+static GENERATION: AtomicU64 = AtomicU64::new(0);
+
+/// Error text of a download stopped by [`cancel_downloads`] (the `.part` file stays).
+pub const PAUSED: &str = "download:paused";
+
+/// Stops every download in progress; each one fails with [`PAUSED`] and
+/// resumes from its `.part` file when started again.
+pub fn cancel_downloads() {
+    GENERATION.fetch_add(1, Ordering::SeqCst);
+}
+
+/// The generation a download starts under.
+fn generation() -> u64 {
+    GENERATION.load(Ordering::SeqCst)
+}
+
+/// Whether downloads were cancelled since `started`.
+fn cancelled(started: u64) -> bool {
+    GENERATION.load(Ordering::SeqCst) != started
 }
 
 fn part_path(dest: &Path) -> PathBuf {
@@ -36,6 +59,7 @@ pub fn downloaded_bytes(dest: &Path) -> u64 {
 /// Downloads `asset` to `dest`, resuming a previous `.part` file when there
 /// is one. `progress(done, total)` is called as data arrives.
 pub async fn download(asset: &Asset<'_>, dest: &Path, progress: impl Fn(u64, u64)) -> Result<()> {
+    let started = generation();
     if std::fs::metadata(dest).map(|m| m.len() == asset.size).unwrap_or(false) {
         return Ok(());
     }
@@ -73,6 +97,10 @@ pub async fn download(asset: &Asset<'_>, dest: &Path, progress: impl Fn(u64, u64
         let mut last = have;
         progress(have, asset.size);
         while let Some(chunk) = resp.chunk().await? {
+            if cancelled(started) {
+                file.flush()?;
+                bail!(PAUSED);
+            }
             file.write_all(&chunk)?;
             have += chunk.len() as u64;
             if have - last >= step {
@@ -138,6 +166,15 @@ pub fn remove(dest: &Path) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn cancel_stops_downloads_started_before_it_only() {
+        let before = generation();
+        assert!(!cancelled(before));
+        cancel_downloads();
+        assert!(cancelled(before));
+        assert!(!cancelled(generation()));
+    }
 
     #[test]
     fn hashes_file() {

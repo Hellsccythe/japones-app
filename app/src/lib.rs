@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use base64::Engine as _;
-use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, Settings, Status, StudyView, VoiceStatus, WordInfo};
-use jp_core::Segment;
+use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, RecommendedSetup, Settings, Status, StudyView, VocabEntry, VoiceStatus, WordInfo};
+use jp_core::{Segment, Token};
 use serde::Serialize;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_fs::{FilePath, FsExt, OpenOptions};
@@ -17,6 +17,8 @@ fn err(e: impl std::fmt::Display) -> String {
 struct Furigana {
     segments: Vec<Segment>,
     html: String,
+    /// Morphemes with word class, to color the text.
+    tokens: Vec<Token>,
 }
 
 #[tauri::command]
@@ -37,7 +39,28 @@ fn save_settings(engine: State<'_, Engine>, settings: Settings) -> CmdResult<()>
 #[tauri::command]
 fn furigana(engine: State<'_, Engine>, text: String) -> CmdResult<Furigana> {
     let segments = engine.furigana(&text).map_err(err)?;
-    Ok(Furigana { html: jp_core::render_html(&segments), segments })
+    let tokens = engine.analyze(&text).map_err(err)?;
+    Ok(Furigana { html: jp_core::render_html(&segments), segments, tokens })
+}
+
+#[tauri::command]
+fn analyze(engine: State<'_, Engine>, text: String) -> CmdResult<Vec<Token>> {
+    engine.analyze(&text).map_err(err)
+}
+
+#[tauri::command]
+fn vocabulary(engine: State<'_, Engine>, text: String) -> CmdResult<Vec<VocabEntry>> {
+    engine.vocabulary(&text).map_err(err)
+}
+
+#[tauri::command]
+async fn translate_vocabulary(engine: State<'_, Engine>, entries: Vec<VocabEntry>) -> CmdResult<Vec<VocabEntry>> {
+    engine.translate_vocabulary(entries).await.map_err(err)
+}
+
+#[tauri::command]
+async fn translate_sentence(engine: State<'_, Engine>, text: String) -> CmdResult<String> {
+    engine.translate_sentence(&text).await.map_err(err)
 }
 
 #[tauri::command]
@@ -141,7 +164,12 @@ fn copy_to(app: &tauri::AppHandle, from: &Path, to: &FilePath) -> anyhow::Result
 
 #[tauri::command]
 async fn export_anki_connect(engine: State<'_, Engine>, cards: Vec<CardInput>, with_audio: bool) -> CmdResult<usize> {
-    engine.export_anki_connect(&cards, with_audio).await.map_err(err)
+    engine.export_anki_connect(&cards, with_audio).await.map_err(|e| engine::error_text(&e))
+}
+
+#[tauri::command]
+async fn anki_test(engine: State<'_, Engine>) -> CmdResult<u32> {
+    engine.anki_test().await.map_err(|e| engine::error_text(&e))
 }
 
 #[tauri::command]
@@ -186,6 +214,27 @@ async fn import_tatoeba(app: tauri::AppHandle, engine: State<'_, Engine>) -> Cmd
 #[tauri::command]
 async fn import_dictionary(engine: State<'_, Engine>) -> CmdResult<usize> {
     engine.import_dictionary().await.map_err(err)
+}
+
+#[tauri::command]
+fn recommended_setup(engine: State<'_, Engine>) -> CmdResult<RecommendedSetup> {
+    engine.recommended_setup().map_err(err)
+}
+
+#[tauri::command]
+async fn test_claude(engine: State<'_, Engine>, key: String) -> CmdResult<()> {
+    engine.test_claude(&key).await.map_err(err)
+}
+
+#[tauri::command]
+async fn test_openrouter(engine: State<'_, Engine>, key: String) -> CmdResult<()> {
+    engine.test_openrouter(&key).await.map_err(err)
+}
+
+/// Pauses the model/voice downloads in progress (they resume from the partial file).
+#[tauri::command]
+fn cancel_downloads(engine: State<'_, Engine>) {
+    engine.cancel_downloads();
 }
 
 #[tauri::command]
@@ -325,17 +374,26 @@ pub fn run() {
             get_settings,
             save_settings,
             furigana,
+            analyze,
+            vocabulary,
+            translate_vocabulary,
+            translate_sentence,
             word_info,
             corpus_examples,
             generated_examples,
             speak,
             speakers,
             export_anki_connect,
+            anki_test,
             export_apkg,
             export_pdf,
             export_text_pdf,
             import_tatoeba,
             import_dictionary,
+            recommended_setup,
+            test_claude,
+            test_openrouter,
+            cancel_downloads,
             models,
             download_model,
             delete_model,

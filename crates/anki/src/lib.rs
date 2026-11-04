@@ -11,6 +11,12 @@ pub use connect::AnkiConnect;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("O Anki não está aberto. Abra o Anki e tente de novo.")]
+    NotRunning,
+    #[error("Falta o add-on AnkiConnect no Anki.")]
+    NoAddon,
+    #[error("A versão do AnkiConnect ({0}) é antiga; atualize o add-on.")]
+    Incompatible(u32),
     #[error("AnkiConnect não respondeu ({0}). O Anki está aberto com o add-on AnkiConnect instalado?")]
     Unreachable(reqwest::Error),
     #[error("AnkiConnect: {0}")]

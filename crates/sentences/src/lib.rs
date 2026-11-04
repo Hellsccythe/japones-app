@@ -2,14 +2,18 @@
 //! (indexed by lemma, so conjugated forms match) and LLM-generated ones.
 
 pub mod llm;
+pub mod openrouter;
 pub mod prompt;
 pub mod store;
 pub mod tatoeba;
+pub mod translate_prompt;
+pub mod vocab_prompt;
 
 use jp_core::Analyzer;
 use serde::{Deserialize, Serialize};
 
 pub use llm::LlmClient;
+pub use openrouter::OpenRouterClient;
 pub use prompt::GenerateRequest;
 pub use store::Store;
 
@@ -23,7 +27,8 @@ pub enum Error {
     Http(#[from] reqwest::Error),
     #[error("io: {0}")]
     Io(#[from] std::io::Error),
-    #[error("Claude API: {0}")]
+    /// An AI provider's API (Claude or OpenRouter) answered with an error.
+    #[error("API da IA: {0}")]
     Api(String),
     #[error("invalid model output: {0}")]
     Json(#[from] serde_json::Error),

@@ -7,51 +7,51 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>日本語 <span>Japonês App</span></h1>
-    <nav>
-      <button class="tab active" data-tab="frases">Frases</button>
-      <button class="tab" data-tab="estudar">Estudar</button>
-      <button class="tab" data-tab="texto">Texto</button>
-      <button class="tab" data-tab="config">Configurações</button>
-    </nav>
-    <div id="status" class="status"></div>
-  </header>
+  <nav class="sidebar" aria-label="Abas">
+    <div class="logo jp" aria-hidden="true">日本</div>
+    <button class="tab active" data-tab="frases" data-icon="search"><span>Frases</span></button>
+    <button class="tab" data-tab="estudar" data-icon="book"><span>Estudar</span></button>
+    <button class="tab" data-tab="texto" data-icon="file"><span>Texto</span></button>
+    <span class="grow"></span>
+    <button id="statusDot" class="status-dot" title="" aria-label="Estado"><i></i></button>
+    <button class="tab" data-tab="config" data-icon="sliders"><span>Ajustes</span></button>
+  </nav>
 
   <main>
     <!-- Frases -->
     <section id="tab-frases" class="panel active">
-      <div class="layout">
-        <div class="col-main">
-          <form id="search" class="search">
-            <input id="word" placeholder="Palavra em japonês (ex.: 食べる)" autocomplete="off" required>
-            <input id="count" type="number" min="1" max="30" value="5" title="Quantidade">
-            <button type="submit">Buscar no corpus</button>
-            <button type="button" id="generate" class="secondary">Gerar com IA</button>
-          </form>
-          <label class="inline"><input type="checkbox" id="autoLlm" checked> Completar com IA quando o corpus tiver poucas frases</label>
+      <div class="frases">
+        <form id="search" class="search">
+          <label class="search-box">
+            <span class="search-ic" data-icon="search"></span>
+            <input id="word" placeholder="Palavra em japonês (ex.: 食べる)" autocomplete="off" required aria-label="Palavra em japonês">
+          </label>
+          <button type="button" id="generate" class="ghost" data-icon="sparkles">Gerar com IA</button>
+          <button type="submit">Buscar</button>
+        </form>
 
-          <div id="wordInfo" class="word-info hidden"></div>
-          <div id="examples" class="examples"></div>
-        </div>
+        <div id="wordInfo" class="word-info hidden"></div>
+        <div id="examples" class="examples"></div>
+      </div>
 
-        <aside class="col-side">
-          <h2>Selecionadas <span id="selCount" class="badge">0</span></h2>
-          <ul id="selected" class="selected"></ul>
-          <div class="export">
-            <div class="add-deck">
-              <input id="deckName" list="deckNames" placeholder="Deck (ex.: Japonês::Verbos)">
-              <datalist id="deckNames"></datalist>
-              <button id="toDeck">Adicionar ao deck</button>
-            </div>
-            <label class="inline"><input type="checkbox" id="withAudio"> Incluir áudio (VOICEVOX)</label>
-            <button id="toAnki" class="desktop-only">Enviar ao Anki</button>
-            <button id="toApkg" class="secondary">Salvar .apkg</button>
-            <label class="inline"><input type="checkbox" id="pdfFurigana" checked> Furigana no PDF</label>
-            <button id="toPdf" class="secondary">Salvar PDF</button>
-            <button id="clearSel" class="link">Limpar seleção</button>
+      <div id="selBar" class="sel-bar hidden" role="region" aria-label="Frases selecionadas">
+        <span class="sel-count"><strong id="selCount">0</strong> <span id="selLabel">selecionadas</span></span>
+        <input id="deckName" list="deckNames" placeholder="Deck (ex.: Japonês::Verbos)" aria-label="Deck de destino">
+        <datalist id="deckNames"></datalist>
+        <div class="menu-wrap">
+          <button type="button" id="exportBtn" class="ghost" aria-haspopup="menu" aria-expanded="false">Exportar <span data-icon="chevron-down"></span></button>
+          <div id="exportMenu" class="menu hidden" role="menu">
+            <button type="button" id="toAnki" class="desktop-only" role="menuitem" data-icon="archive">Enviar ao Anki</button>
+            <button type="button" id="toApkg" role="menuitem" data-icon="download">Salvar .apkg</button>
+            <button type="button" id="toPdf" role="menuitem" data-icon="file">Salvar PDF</button>
+            <hr>
+            <label class="sw-row"><span>Incluir áudio</span><span class="switch"><input type="checkbox" id="withAudio"><span></span></span></label>
+            <label class="sw-row"><span>Furigana no PDF</span><span class="switch"><input type="checkbox" id="pdfFurigana" checked><span></span></span></label>
+            <hr>
+            <button type="button" id="clearSel" role="menuitem" data-icon="x">Limpar seleção</button>
           </div>
-        </aside>
+        </div>
+        <button type="button" id="toDeck" data-icon="plus">Adicionar ao deck</button>
       </div>
     </section>
 
@@ -63,13 +63,9 @@
           <tbody id="deckList"></tbody>
         </table>
         <div class="row">
-          <button id="newDeck" class="secondary">Novo deck</button>
-          <button id="importApkg" class="secondary">Importar .apkg</button>
-          <span class="grow"></span>
-          <button id="backupStudy" class="secondary">Fazer backup</button>
-          <button id="restoreStudy" class="secondary">Restaurar backup</button>
+          <button id="newDeck" class="secondary" data-icon="plus">Novo deck</button>
+          <button id="importApkg" class="secondary" data-icon="upload">Importar .apkg</button>
         </div>
-        <p class="hint">O backup guarda todos os decks e o histórico de revisões num arquivo. Restaure no celular ou em outro PC para continuar de onde parou.</p>
         <form id="deckEdit" class="settings hidden">
           <fieldset>
             <legend>Deck</legend>
@@ -78,10 +74,10 @@
             <label>Revisões por dia <input name="reviews_per_day" type="number" min="0" max="99999"></label>
             <div class="row">
               <button type="submit">Salvar</button>
-              <button type="button" id="exportDeck" class="secondary">Exportar .apkg</button>
-              <label class="inline"><input type="checkbox" id="deckAudio"> com áudio</label>
+              <button type="button" id="exportDeck" class="secondary" data-icon="download">Exportar .apkg</button>
+              <label class="sw-inline"><span class="switch"><input type="checkbox" id="deckAudio"><span></span></span> com áudio</label>
               <span class="grow"></span>
-              <button type="button" id="deleteDeck" class="danger">Apagar deck</button>
+              <button type="button" id="deleteDeck" class="danger" data-icon="trash">Apagar deck</button>
               <button type="button" id="closeDeckEdit" class="link">Fechar</button>
             </div>
           </fieldset>
@@ -90,10 +86,10 @@
 
       <div id="studyView" class="study hidden">
         <div class="study-top">
-          <button id="leaveStudy" class="link">‹ Decks</button>
+          <button id="leaveStudy" class="link" data-icon="chevron-left">Decks</button>
           <strong id="studyDeck"></strong>
           <span id="studyCounts" class="counts"></span>
-          <label class="inline" title="Tocar o áudio ao mostrar a resposta"><input type="checkbox" id="autoPlay" checked> áudio automático</label>
+          <label class="sw-inline" title="Tocar o áudio ao mostrar a resposta"><span class="switch"><input type="checkbox" id="autoPlay" checked><span></span></span> áudio automático</label>
         </div>
         <div id="card" class="card">
           <div class="front">
@@ -104,7 +100,7 @@
             <div id="cardFurigana" class="sentence jp"></div>
             <div id="cardTranslation" class="translation"></div>
             <div id="cardNote" class="meta"></div>
-            <button id="cardPlay" class="icon play" title="Ouvir (R)">▶</button>
+            <button id="cardPlay" class="btn-icon play" title="Ouvir (R)" aria-label="Ouvir" data-icon="volume"></button>
           </div>
         </div>
         <div id="showRow" class="answer-row">
@@ -122,138 +118,310 @@
 
     <!-- Texto -->
     <section id="tab-texto" class="panel">
-      <textarea id="text" rows="8" placeholder="Cole um texto em japonês. Cada linha vira um parágrafo."></textarea>
+      <div class="texto">
+      <textarea id="text" rows="8" placeholder="Cole um texto em japonês. Cada linha vira um parágrafo." aria-label="Texto em japonês"></textarea>
       <div class="row">
-        <button id="showFurigana">Mostrar furigana</button>
-        <button id="playText" class="secondary">▶ Ouvir</button>
-        <label class="inline"><input type="checkbox" id="hideRt"> Esconder leitura (passe o mouse para ver)</label>
+        <button id="showFurigana" data-icon="book">Mostrar furigana</button>
+        <button id="playText" class="ghost" data-icon="volume">Ouvir</button>
+        <label class="sw-inline" title="Passe o mouse (ou toque) para ver"><span class="switch"><input type="checkbox" id="hideRt"><span></span></span> Esconder leitura</label>
         <span class="grow"></span>
-        <label class="inline"><input type="checkbox" id="textPdfFurigana" checked> Furigana no PDF</label>
-        <button id="textPdf" class="secondary">Salvar PDF</button>
+        <label class="sw-inline"><span class="switch"><input type="checkbox" id="textPdfFurigana" checked><span></span></span> Furigana no PDF</label>
+        <button id="textPdf" class="ghost" data-icon="file">Salvar PDF</button>
       </div>
       <div id="textOut" class="text-out jp"></div>
+      </div>
     </section>
 
     <!-- Configurações -->
     <section id="tab-config" class="panel">
-      <form id="settings" class="settings">
-        <button type="button" id="openSetup" class="link">Primeiros passos (o que baixar)</button>
-        <fieldset id="iaBox">
-          <legend>IA (geração de frases)</legend>
-          <label>Usar
-            <select name="llm_provider" id="llmProvider">
-              <option value="local">IA local (offline, roda neste aparelho)</option>
-              <option value="claude">Claude (online, precisa de chave da API)</option>
-            </select>
-          </label>
-          <div id="localBox">
-            <p class="hint">Escolha um modelo e baixe uma vez. Os arquivos ficam no aparelho e o download continua de onde parou.</p>
-            <ul id="models" class="models"></ul>
-            <label>Threads de CPU <input name="llm_threads" type="number" min="0" max="64" title="0 = automático"></label>
-          </div>
-          <div id="claudeBox">
-            <label>Chave da API <input name="anthropic_api_key" type="password" placeholder="vazio = usa ANTHROPIC_API_KEY"></label>
-            <label>Modelo <input name="model"></label>
-          </div>
-          <label>Nível JLPT
-            <select name="level"><option value="">Qualquer</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select>
-          </label>
-          <label>Idioma das traduções/notas <input name="translation_language_name"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Corpus Tatoeba</legend>
-          <label>Idiomas de tradução (ISO 639-3, por preferência) <input name="translation_langs" placeholder="por, eng"></label>
-          <div class="row">
-            <button type="button" id="importTatoeba" class="secondary">Baixar e indexar Tatoeba</button>
-            <button type="button" id="importDict" class="secondary">Baixar dicionário (JMdict)</button>
-          </div>
-          <pre id="importLog" class="log hidden"></pre>
-        </fieldset>
-        <fieldset id="audioBox">
-          <legend>Áudio (VOICEVOX)</legend>
-          <label>Usar
-            <select name="tts_backend" id="ttsBackend">
-              <option value="embedded">Voz embutida (offline, não precisa abrir nada)</option>
-              <option value="http" class="desktop-only">Programa VOICEVOX aberto no PC (HTTP)</option>
-            </select>
-          </label>
-          <div id="embeddedBox">
-            <div id="voiceTerms" class="terms">
-              <p>As vozes usam o VOICEVOX CORE, o ONNX Runtime da VOICEVOX e os modelos de voz VOICEVOX. Pelos termos:</p>
-              <ul>
-                <li>uso comercial e não comercial permitido, e o app pode embuti-los;</li>
-                <li>é proibido fazer engenharia reversa dos modelos e do ONNX Runtime;</li>
-                <li>ao publicar um áudio, dê o crédito da voz (ex.: <code>VOICEVOX:ずんだもん</code>). O app coloca o crédito nos cards automaticamente;</li>
-                <li>algumas vozes têm restrições extras, mostradas em “Créditos”.</li>
-              </ul>
-              <p><a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">Termos dos modelos de voz</a> ·
-                 <a href="https://github.com/VOICEVOX/onnxruntime-builder" target="_blank">ONNX Runtime da VOICEVOX</a></p>
-              <label class="inline"><input type="checkbox" name="voice_terms_accepted" id="voiceTermsAccepted"> Li e aceito os termos</label>
+      <div class="cfg">
+        <nav class="cfg-nav" aria-label="Seções">
+          <h2>Configurações</h2>
+          <button type="button" data-sec="aparencia" data-icon="palette"><span>Aparência</span></button>
+          <button type="button" data-sec="ia" data-icon="cpu"><span>IA</span><i class="dot"></i></button>
+          <button type="button" data-sec="frases" data-icon="book"><span>Frases e dicionário</span><i class="dot"></i></button>
+          <button type="button" data-sec="voz" data-icon="volume"><span>Voz</span><i class="dot"></i></button>
+          <button type="button" data-sec="anki" data-icon="archive"><span>Anki</span></button>
+          <button type="button" data-sec="backup" data-icon="database"><span>Backup</span></button>
+          <button type="button" data-sec="sobre" data-icon="info"><span>Sobre</span></button>
+        </nav>
+
+        <form id="settings" class="settings cfg-body">
+          <section class="cfg-sec" data-sec="aparencia">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Aparência</h2>
+            <div class="field">
+              <span>Tema</span>
+              <div class="seg" data-name="theme">
+                <button type="button" data-v="system">Sistema</button>
+                <button type="button" data-v="light" data-icon="sun">Claro</button>
+                <button type="button" data-v="dark" data-icon="moon">Escuro</button>
+              </div>
+              <input type="hidden" name="theme">
             </div>
-            <p class="hint">Cada pacote tem uma ou mais vozes (~60 MB). Na primeira vez também são baixados o ONNX Runtime e o dicionário (~29 MB).</p>
-            <ul id="voicePacks" class="models"></ul>
-            <details id="creditsBox" class="credits">
-              <summary>Créditos das vozes baixadas</summary>
-              <ul id="credits"></ul>
+            <label class="sw-row">
+              <span>Cores por classe de palavra<small>Substantivos, verbos, partículas… cada um com uma cor. Clique na legenda das frases para trocar as cores.</small></span>
+              <span class="switch"><input type="checkbox" name="pos_colors_on"><span></span></span>
+            </label>
+            <div class="field">
+              <span>Cores</span>
+              <div id="posColorRows" class="legend plain"></div>
+            </div>
+            <div class="field">
+              <span>Tamanho do japonês</span>
+              <div class="seg" data-name="jp_font_size">
+                <button type="button" data-v="small">P</button>
+                <button type="button" data-v="medium">M</button>
+                <button type="button" data-v="large">G</button>
+              </div>
+              <input type="hidden" name="jp_font_size">
+            </div>
+          </section>
+
+          <section class="cfg-sec" data-sec="ia">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>IA</h2>
+            <p class="hint">Gera frases novas quando o corpus tem poucas e traduz o vocabulário.</p>
+            <div class="seg" data-name="llm_provider">
+              <button type="button" data-v="local" data-icon="cpu">Local</button>
+              <button type="button" data-v="claude" data-icon="cloud">Claude</button>
+              <button type="button" data-v="openrouter" data-icon="cloud">OpenRouter</button>
+              <button type="button" data-v="off">Desligada</button>
+            </div>
+            <input type="hidden" name="llm_provider" id="llmProvider">
+            <div id="localBox">
+              <p class="hint">Roda neste aparelho, offline. Escolha um modelo e baixe uma vez; o download continua de onde parou.</p>
+              <ul id="models" class="models"></ul>
+            </div>
+            <div id="claudeBox">
+              <p class="hint">Online, precisa de uma chave da API da Anthropic.</p>
+              <label>Chave da API <input name="anthropic_api_key" type="password" placeholder="vazio = usa ANTHROPIC_API_KEY"></label>
+              <div class="row">
+                <button type="button" id="claudeTest" class="secondary" data-icon="refresh">Testar</button>
+                <a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a>
+                <span id="claudeResult" class="hint"></span>
+              </div>
+              <label>Modelo <input name="model"></label>
+            </div>
+            <div id="openrouterBox">
+              <p class="hint">Online. O OpenRouter dá acesso a vários modelos (alguns gratuitos) com uma chave só.</p>
+              <label>Chave do OpenRouter <input name="openrouter_api_key" type="password" placeholder="vazio = usa OPENROUTER_API_KEY"></label>
+              <div class="row">
+                <button type="button" id="openrouterTest" class="secondary" data-icon="refresh">Testar</button>
+                <a href="https://openrouter.ai/settings/keys" target="_blank">Criar uma chave</a>
+                <span id="openrouterResult" class="hint"></span>
+              </div>
+              <label>Modelo <input name="openrouter_model" placeholder="openrouter/auto"></label>
+              <p class="hint">Qualquer id de <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a>. <code>openrouter/auto</code> escolhe sozinho; o modelo precisa aceitar respostas em JSON.</p>
+            </div>
+            <details class="adv">
+              <summary>Avançado</summary>
+              <label>Threads de CPU <input name="llm_threads" type="number" min="0" max="64" title="0 = automático"></label>
+              <label>Nível JLPT
+                <select name="level"><option value="">Qualquer</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select>
+              </label>
+              <label>Idioma das traduções e notas <input name="translation_language_name"></label>
             </details>
-          </div>
-          <label id="voicevoxUrlBox">URL do VOICEVOX <input name="voicevox_url"></label>
-          <label>Voz <select name="speaker" id="speakerSelect"></select></label>
-          <button type="button" id="loadSpeakers" class="link">Atualizar lista de vozes</button>
-          <label>Velocidade <input name="speed" type="number" step="0.05" min="0.5" max="2"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Anki</legend>
-          <label class="desktop-only">URL do AnkiConnect <input name="anki_connect_url"></label>
-          <label>Deck <input name="deck"></label>
-        </fieldset>
-        <button type="submit">Salvar configurações</button>
-        <fieldset id="aboutBox" class="about">
-          <legend>Sobre</legend>
-          <p><strong>Japonês App</strong> <span id="appVersion"></span></p>
-          <ul>
-            <li>Frases: <a href="https://tatoeba.org" target="_blank">Tatoeba</a>, CC BY 2.0 FR. Cada frase guarda o seu número no Tatoeba.</li>
-            <li>Dicionário: <a href="https://www.edrdg.org/jmdict/j_jmdict.html" target="_blank">JMdict</a> © EDRDG, CC BY-SA 4.0, via <a href="https://github.com/scriptin/jmdict-simplified" target="_blank">jmdict-simplified</a>.</li>
-            <li>Leituras e furigana: dicionário IPADIC (lindera), licença do IPADIC/NAIST.</li>
-            <li>Vozes: VOICEVOX CORE (MIT), ONNX Runtime da VOICEVOX e modelos de voz VOICEVOX, cada um com seus termos. O crédito de cada voz baixada está em Áudio › Créditos.</li>
-            <li>IA local: modelos Gemma 4 do Google (Apache-2.0), rodando com llama.cpp (MIT).</li>
-            <li>Revisão espaçada: <a href="https://github.com/open-spaced-repetition/fsrs-rs" target="_blank">FSRS</a> (BSD-3-Clause).</li>
-            <li>PDF: Typst (Apache-2.0) e a fonte Noto Serif JP (SIL OFL 1.1).</li>
-          </ul>
-          <button type="button" id="openLicenses" class="secondary">Licenças de software</button>
-        </fieldset>
-      </form>
+          </section>
+
+          <section class="cfg-sec" data-sec="frases">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Frases e dicionário</h2>
+            <div class="field">
+              <span>Frases por busca</span>
+              <div class="seg" data-name="examples_count">
+                <button type="button" data-v="3">3</button>
+                <button type="button" data-v="5">5</button>
+                <button type="button" data-v="10">10</button>
+              </div>
+              <input type="hidden" name="examples_count">
+            </div>
+            <label class="sw-row">
+              <span>Completar com IA<small>Quando o corpus tiver poucas frases para a palavra.</small></span>
+              <span class="switch"><input type="checkbox" name="fill_with_llm"><span></span></span>
+            </label>
+            <label>Idiomas de tradução (ISO 639-3, por preferência) <input name="translation_langs" placeholder="por, eng"></label>
+            <div class="item">
+              <div><strong>Frases do Tatoeba</strong> <span id="tatoebaState" class="tag muted"></span><small>Frases reais com tradução. ~36 MB.</small></div>
+              <button type="button" id="importTatoeba" class="secondary" data-icon="download">Baixar</button>
+            </div>
+            <div class="item">
+              <div><strong>Dicionário JMdict</strong> <span id="dictState" class="tag muted"></span><small>Significado e leitura da palavra buscada. ~12 MB.</small></div>
+              <button type="button" id="importDict" class="secondary" data-icon="download">Baixar</button>
+            </div>
+            <progress id="importProgress" class="hidden"></progress>
+            <details id="importLogBox" class="adv hidden">
+              <summary>ver detalhes</summary>
+              <pre id="importLog" class="log"></pre>
+            </details>
+          </section>
+
+          <section class="cfg-sec" data-sec="voz" id="audioBox">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Voz</h2>
+            <label>Usar
+              <select name="tts_backend" id="ttsBackend">
+                <option value="embedded">Voz embutida (offline, não precisa abrir nada)</option>
+                <option value="http" class="desktop-only">Programa VOICEVOX aberto no PC (HTTP)</option>
+              </select>
+            </label>
+            <div id="embeddedBox">
+              <div id="voiceTerms" class="terms">
+                <p>As vozes VOICEVOX são livres para uso comercial e não comercial. Ao publicar um áudio, dê o crédito da voz (o app já põe nos cards).</p>
+                <details>
+                  <summary>ler termos</summary>
+                  <ul>
+                    <li>uso comercial e não comercial permitido, e o app pode embuti-los;</li>
+                    <li>é proibido fazer engenharia reversa dos modelos e do ONNX Runtime;</li>
+                    <li>ao publicar um áudio, dê o crédito da voz (ex.: <code>VOICEVOX:ずんだもん</code>);</li>
+                    <li>algumas vozes têm restrições extras, mostradas em “Créditos”.</li>
+                  </ul>
+                  <p><a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">Termos dos modelos de voz</a> ·
+                     <a href="https://github.com/VOICEVOX/onnxruntime-builder" target="_blank">ONNX Runtime da VOICEVOX</a></p>
+                </details>
+                <label class="sw-row">
+                  <span>Li e aceito os termos</span>
+                  <span class="switch"><input type="checkbox" name="voice_terms_accepted" id="voiceTermsAccepted"><span></span></span>
+                </label>
+              </div>
+              <p class="hint">Cada pacote tem uma ou mais vozes (~60 MB). Na primeira vez também são baixados o ONNX Runtime e o dicionário (~29 MB).</p>
+              <ul id="voicePacks" class="models"></ul>
+              <details id="creditsBox" class="credits">
+                <summary>Créditos das vozes baixadas</summary>
+                <ul id="credits"></ul>
+              </details>
+            </div>
+            <label id="voicevoxUrlBox">URL do VOICEVOX <input name="voicevox_url"></label>
+            <label>Voz <select name="speaker" id="speakerSelect"></select></label>
+            <button type="button" id="loadSpeakers" class="link" data-icon="refresh">Atualizar lista de vozes</button>
+            <label>Velocidade <input name="speed" type="number" step="0.05" min="0.5" max="2"></label>
+          </section>
+
+          <section class="cfg-sec" data-sec="anki">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Anki</h2>
+            <label>Deck padrão <input name="deck"></label>
+            <div class="desktop-only">
+              <label>URL do AnkiConnect <input name="anki_connect_url"></label>
+              <div class="row">
+                <button type="button" id="ankiTest" class="secondary" data-icon="refresh">Testar conexão</button>
+                <span id="ankiResult" class="hint"></span>
+              </div>
+              <ol class="how">
+                <li>Instale o <a href="https://apps.ankiweb.net" target="_blank">Anki</a> no PC.</li>
+                <li>No Anki, abra <strong>Ferramentas › Complementos › Obter complementos</strong> e cole o código
+                  <code id="ankiCode">2055492159</code> <button type="button" id="copyAnkiCode" class="btn-icon" data-icon="copy" title="Copiar código"></button></li>
+                <li>Reinicie o Anki e deixe-o aberto ao enviar os cards.</li>
+              </ol>
+            </div>
+            <p class="hint android-only">No celular, use “Salvar .apkg” e abra o arquivo no AnkiDroid.</p>
+          </section>
+
+          <section class="cfg-sec" data-sec="backup">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Backup</h2>
+            <p class="hint">O backup guarda todos os decks e o histórico de revisões num arquivo. Restaure no celular ou em outro PC para continuar de onde parou.</p>
+            <div class="row">
+              <button type="button" id="backupStudy" class="secondary" data-icon="upload">Fazer backup</button>
+              <button type="button" id="restoreStudy" class="secondary" data-icon="download">Restaurar backup</button>
+            </div>
+          </section>
+
+          <section class="cfg-sec about" data-sec="sobre" id="aboutBox">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Sobre</h2>
+            <p><strong>Japonês App</strong> <span id="appVersion"></span></p>
+            <ul>
+              <li>Frases: <a href="https://tatoeba.org" target="_blank">Tatoeba</a>, CC BY 2.0 FR. Cada frase guarda o seu número no Tatoeba.</li>
+              <li>Dicionário: <a href="https://www.edrdg.org/jmdict/j_jmdict.html" target="_blank">JMdict</a> © EDRDG, CC BY-SA 4.0, via <a href="https://github.com/scriptin/jmdict-simplified" target="_blank">jmdict-simplified</a>.</li>
+              <li>Leituras e furigana: dicionário IPADIC (lindera), licença do IPADIC/NAIST.</li>
+              <li>Vozes: VOICEVOX CORE (MIT), ONNX Runtime da VOICEVOX e modelos de voz VOICEVOX, cada um com seus termos. O crédito de cada voz baixada está em Voz › Créditos.</li>
+              <li>IA local: modelos Gemma 4 do Google (Apache-2.0), rodando com llama.cpp (MIT).</li>
+              <li>Revisão espaçada: <a href="https://github.com/open-spaced-repetition/fsrs-rs" target="_blank">FSRS</a> (BSD-3-Clause).</li>
+              <li>PDF: Typst (Apache-2.0) e a fonte Noto Serif JP (SIL OFL 1.1).</li>
+            </ul>
+            <div class="row">
+              <button type="button" id="openSetup" class="secondary">Primeiros passos</button>
+              <button type="button" id="openLicenses" class="secondary">Licenças de software</button>
+            </div>
+          </section>
+        </form>
+      </div>
     </section>
   </main>
 
   <div id="setup" class="overlay hidden" role="dialog" aria-labelledby="setupTitle">
     <div class="sheet">
-      <h2 id="setupTitle">Primeiros passos</h2>
-      <p class="hint">Baixe o que for usar. Tudo fica no aparelho e funciona offline depois. Só as frases são necessárias para começar; o resto dá para baixar depois em Configurações.</p>
-      <ol class="steps">
+      <div class="row head"><h2 id="setupTitle">Primeiros passos</h2><span class="grow"></span>
+        <button type="button" id="setupClose" class="btn-icon" title="Fechar" aria-label="Fechar" data-icon="x"></button></div>
+      <p class="hint">Tudo fica no aparelho e funciona offline depois. Melhor baixar no Wi-Fi.</p>
+
+      <div id="setupRec" class="rec">
+        <strong>Instalar o recomendado</strong>
+        <p id="setupSummary" class="rec-summary"></p>
+        <ul id="setupItems" class="rec-items"></ul>
+        <div id="setupTerms" class="terms hidden">
+          <p>As vozes VOICEVOX são livres para uso comercial e não comercial; ao publicar um áudio, dê o crédito da voz.
+            <a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">ler termos</a></p>
+          <label class="sw-row"><span>Li e aceito os termos das vozes</span>
+            <span class="switch"><input type="checkbox" id="setupTermsOk"><span></span></span></label>
+        </div>
+        <div id="setupProgress" class="hidden">
+          <progress id="setupBar" max="1" value="0"></progress>
+          <small id="setupNow" class="hint"></small>
+        </div>
+        <div class="row">
+          <button type="button" id="setupInstall" data-icon="download"><span>Instalar o recomendado</span></button>
+          <button type="button" id="setupPause" class="ghost hidden">Pausar</button>
+        </div>
+      </div>
+
+      <div class="row alt">
+        <button type="button" id="setupManual" class="ghost" data-icon="sliders">Escolher eu mesmo</button>
+        <button type="button" id="setupClaude" class="link" data-icon="cloud">Usar o Claude em vez de baixar a IA</button>
+      </div>
+
+      <div id="setupClaudeBox" class="claude-box hidden">
+        <p class="hint">O Claude roda online e precisa de uma chave da API da Anthropic.
+          <a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a></p>
+        <div class="row">
+          <input id="setupClaudeKey" type="password" placeholder="sk-ant-…" aria-label="Chave da API do Claude" autocomplete="off">
+          <button type="button" id="setupClaudeTest" class="ghost">Testar</button>
+        </div>
+        <small id="setupClaudeResult" class="hint"></small>
+      </div>
+
+      <ol id="setupSteps" class="steps hidden">
         <li data-step="tatoeba">
           <div><strong>Frases do Tatoeba</strong> <span class="tag">necessário</span><br>
             <small>Frases reais com tradução, para buscar exemplos de qualquer palavra. ~36 MB.</small>
             <small class="step-log"></small></div>
-          <button data-act="tatoeba">Baixar</button>
+          <button type="button" data-act="tatoeba">Baixar</button>
         </li>
         <li data-step="dict">
           <div><strong>Dicionário JMdict</strong> <span class="tag">recomendado</span><br>
             <small>Significado e leitura da palavra buscada. ~12 MB.</small></div>
-          <button data-act="dict">Baixar</button>
+          <button type="button" data-act="dict">Baixar</button>
         </li>
         <li data-step="voice">
           <div><strong>Voz (VOICEVOX)</strong> <span class="tag opt">opcional</span><br>
             <small>Para ouvir as frases e pôr áudio nos cards. ~90 MB na primeira voz; é preciso aceitar os termos.</small></div>
-          <button data-act="voice" class="secondary">Escolher voz</button>
+          <button type="button" data-act="voice" class="secondary">Escolher voz</button>
         </li>
         <li data-step="llm">
           <div><strong>IA local</strong> <span class="tag opt">opcional</span><br>
-            <small>Gera frases novas quando o corpus tem poucas. <span id="setupModelSize"></span></small></div>
-          <button data-act="llm" class="secondary">Escolher modelo</button>
+            <small>Gera frases novas e traduz o vocabulário. <span id="setupModelSize"></span></small></div>
+          <button type="button" data-act="llm" class="secondary">Escolher modelo</button>
         </li>
       </ol>
-      <div class="row"><span class="grow"></span><button id="setupClose">Começar</button></div>
+    </div>
+  </div>
+
+  <div id="quick" class="overlay hidden" role="dialog" aria-labelledby="quickTitle">
+    <div class="sheet narrow">
+      <div class="row head"><h2 id="quickTitle"></h2><span class="grow"></span>
+        <button type="button" id="quickClose" class="btn-icon" title="Fechar" aria-label="Fechar" data-icon="x"></button></div>
+      <div id="quickBody"></div>
     </div>
   </div>
 
@@ -265,6 +433,6 @@
   </div>
 
   <div id="toast" class="toast hidden"></div>
-  <script src="app.js"></script>
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>

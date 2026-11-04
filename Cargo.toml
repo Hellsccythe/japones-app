@@ -32,6 +32,8 @@ voicevox_core = { git = "https://github.com/VOICEVOX/voicevox_core", tag = "0.17
 typed_floats = "1"
 flate2 = "1"
 tar = "0.4"
+# RAM total, to pick the local model (MIT).
+sysinfo = { version = "0.40", default-features = false, features = ["system"] }
 
 jp-core = { path = "crates/jp-core" }
 dict = { path = "crates/dict" }

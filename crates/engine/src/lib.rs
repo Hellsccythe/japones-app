@@ -5,6 +5,8 @@
 //! and can run as Tauri commands.
 
 mod settings;
+mod setup;
+mod vocab;
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
@@ -12,10 +14,12 @@ use std::sync::{Arc, Mutex, RwLock};
 use anyhow::{bail, Context, Result};
 use local_llm::LocalLlm;
 use tts::embedded::EmbeddedTts;
-use jp_core::{Analyzer, Segment};
+use jp_core::{Analyzer, Segment, Token};
 use serde::{Deserialize, Serialize};
 
-pub use settings::Settings;
+pub use settings::{PosColors, Settings};
+pub use setup::{RecommendedSetup, SetupItem};
+pub use vocab::VocabEntry;
 pub use sentences::{Example, Source};
 
 /// An example sentence plus everything the UI needs to show it.
@@ -25,6 +29,8 @@ pub struct ExampleView {
     pub example: Example,
     pub segments: Vec<Segment>,
     pub html: String,
+    /// Morphemes with word class, so the UI can color the sentence.
+    pub tokens: Vec<Token>,
     /// False when an LLM sentence doesn't actually contain the word
     /// (per morphological analysis). Shown as a warning, not dropped.
     pub contains_word: bool,
@@ -104,6 +110,8 @@ pub struct Engine {
     models_dir: PathBuf,
     /// Local model kept in memory after first use, with its catalog id.
     local: Mutex<Option<(String, Arc<LocalLlm>)>>,
+    /// Held while a model loads, so two requests don't load it twice at once.
+    loading: tokio::sync::Mutex<()>,
     /// ONNX Runtime, dictionary and voice packs for the embedded voice.
     voice_dir: PathBuf,
     /// Synthesized WAVs by text + voice + speed, shared by the player and the cards.
@@ -119,6 +127,8 @@ pub struct StudyView {
     #[serde(flatten)]
     pub card: srs::StudyCard,
     pub furigana_html: String,
+    /// The sentence's morphemes with word class, to color it.
+    pub tokens: Vec<Token>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -142,6 +152,7 @@ impl Engine {
             settings_path,
             models_dir: data_dir.join("models"),
             local: Mutex::new(None),
+            loading: tokio::sync::Mutex::new(()),
             voice_dir: data_dir.join("voice"),
             audio_cache_dir: data_dir.join("audio-cache"),
             embedded_tts: Mutex::new(None),
@@ -190,8 +201,12 @@ impl Engine {
 
     fn llm_ready(&self) -> bool {
         let s = self.settings();
-        if s.uses_claude() {
+        if s.llm_off() {
+            false
+        } else if s.uses_claude() {
             s.api_key().is_some()
+        } else if s.uses_openrouter() {
+            s.openrouter_key().is_some()
         } else {
             local_llm::find(&s.local_model).is_some_and(|m| self.model_path(m).exists())
         }
@@ -199,8 +214,12 @@ impl Engine {
 
     fn llm_name(&self) -> String {
         let s = self.settings();
-        if s.uses_claude() {
+        if s.llm_off() {
+            "desligada".into()
+        } else if s.uses_claude() {
             "Claude".into()
+        } else if s.uses_openrouter() {
+            format!("OpenRouter ({})", s.openrouter_model)
         } else {
             local_llm::find(&s.local_model).map_or("IA local".into(), |m| m.name.to_string())
         }
@@ -243,11 +262,91 @@ impl Engine {
         })
     }
 
+    /// Morphemes of `text` with furigana and word class.
+    pub fn analyze(&self, text: &str) -> Result<Vec<Token>> {
+        Ok(self.analyzer.analyze(text)?)
+    }
+
+    /// Word-by-word vocabulary of a sentence, with JMdict meanings in English
+    /// (up to 3 glosses of the first sense; empty when the word isn't there).
+    pub fn vocabulary(&self, text: &str) -> Result<Vec<VocabEntry>> {
+        let tokens = self.analyzer.analyze(text)?;
+        let dict = self.dict.lock().unwrap();
+        let lookup = |base: &str, class| vocab::pick_gloss(&dict.lookup(base).ok()?, class);
+        Ok(vocab::vocabulary(&tokens, lookup, |s| self.analyzer.to_kana(s).ok()))
+    }
+
+    /// Translates the vocabulary meanings into the configured language with the
+    /// selected AI. Cached meanings are reused; only the rest go to the AI, and
+    /// an entry it leaves untranslated keeps its original gloss.
+    /// Errors `ia:off` (AI turned off) and `ia:not_ready` (no model / no key)
+    /// let the UI open the quick AI setup.
+    pub async fn translate_vocabulary(&self, entries: Vec<VocabEntry>) -> Result<Vec<VocabEntry>> {
+        let s = self.settings();
+        if s.llm_off() {
+            bail!("ia:off");
+        }
+        if !self.llm_ready() {
+            bail!("ia:not_ready");
+        }
+        let lang = s.translation_language_name.clone();
+        let keys: Vec<_> = entries.iter().map(vocab::cache_key).collect();
+        let cached = self.store.lock().unwrap().cached_glosses(&keys, &lang)?;
+        let (entries, missing) = vocab::apply_cache(entries, &cached);
+        if missing.is_empty() {
+            return Ok(entries);
+        }
+        let words: Vec<(String, String)> =
+            missing.iter().map(|&i| (entries[i].base.clone(), entries[i].gloss.clone())).collect();
+        let translations = if s.uses_claude() {
+            let key = s.api_key().context("ia:not_ready")?;
+            sentences::LlmClient::new(key, Some(s.model.clone())).translate_vocabulary(&words, &lang).await?
+        } else if s.uses_openrouter() {
+            let key = s.openrouter_key().context("ia:not_ready")?;
+            sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()))
+                .translate_vocabulary(&words, &lang)
+                .await?
+        } else {
+            let llm = self.local_llm().await?;
+            let lang = lang.clone();
+            tokio::task::spawn_blocking(move || llm.translate_vocabulary(&words, &lang)).await??
+        };
+        let (entries, rows) = vocab::merge_translations(entries, &missing, &translations);
+        self.store.lock().unwrap().save_glosses(&rows, &lang)?;
+        Ok(entries)
+    }
+
+    /// Translates a sentence (from the "Texto" tab) with the selected AI.
+    /// Same `ia:off` / `ia:not_ready` errors as [`Self::translate_vocabulary`].
+    pub async fn translate_sentence(&self, text: &str) -> Result<String> {
+        let s = self.settings();
+        if s.llm_off() {
+            bail!("ia:off");
+        }
+        if !self.llm_ready() {
+            bail!("ia:not_ready");
+        }
+        let lang = s.translation_language_name.clone();
+        if s.uses_claude() {
+            let key = s.api_key().context("ia:not_ready")?;
+            return Ok(sentences::LlmClient::new(key, Some(s.model.clone())).translate_sentence(text, &lang).await?);
+        }
+        if s.uses_openrouter() {
+            let key = s.openrouter_key().context("ia:not_ready")?;
+            let client = sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()));
+            return Ok(client.translate_sentence(text, &lang).await?);
+        }
+        let llm = self.local_llm().await?;
+        let text = text.to_string();
+        tokio::task::spawn_blocking(move || llm.translate_sentence(&text, &lang)).await?
+    }
+
     fn view(&self, example: Example, lemmas: &[String]) -> Result<ExampleView> {
         let segments = self.analyzer.furigana(&example.japanese)?;
         Ok(ExampleView {
             contains_word: sentences::contains_word(&self.analyzer, &example.japanese, lemmas)?,
             html: jp_core::render_html(&segments),
+            tokens: self.analyzer.analyze(&example.japanese)?,
             segments,
             example,
         })
@@ -296,11 +395,19 @@ impl Engine {
             level: s.level.clone(),
             translation_language: s.translation_language_name.clone(),
         };
+        if s.llm_off() {
+            bail!("A IA está desligada nas configurações");
+        }
         if s.uses_claude() {
             let key = s
                 .api_key()
                 .context("Configure a chave da API do Claude (ANTHROPIC_API_KEY) nas configurações")?;
             let client = sentences::LlmClient::new(key, Some(s.model.clone()));
+            return Ok(client.generate(&req).await?);
+        }
+        if s.uses_openrouter() {
+            let key = s.openrouter_key().context("Configure a chave do OpenRouter nas configurações")?;
+            let client = sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()));
             return Ok(client.generate(&req).await?);
         }
         let llm = self.local_llm().await?;
@@ -312,6 +419,7 @@ impl Engine {
         let s = self.settings();
         let info = local_llm::find(&s.local_model)
             .context("modelo local desconhecido; escolha outro nas configurações")?;
+        let _loading = self.loading.lock().await;
         if let Some((id, llm)) = self.local.lock().unwrap().as_ref() {
             if id == info.id {
                 return Ok(llm.clone());
@@ -328,6 +436,54 @@ impl Engine {
         let llm = Arc::new(llm);
         *self.local.lock().unwrap() = Some((info.id.to_string(), llm.clone()));
         Ok(llm)
+    }
+
+    /// Checks a Claude API key (the one typed, or the saved one when empty).
+    pub async fn test_claude(&self, key: &str) -> Result<()> {
+        let key = Some(key.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .or_else(|| self.settings().api_key())
+            .context("Digite a chave da API do Claude")?;
+        Ok(sentences::LlmClient::new(key, None).check().await?)
+    }
+
+    /// Checks an OpenRouter key (the one typed, or the saved one when empty).
+    pub async fn test_openrouter(&self, key: &str) -> Result<()> {
+        let key = Some(key.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .or_else(|| self.settings().openrouter_key())
+            .context("Digite a chave do OpenRouter")?;
+        Ok(sentences::OpenRouterClient::new(key, None).check().await?)
+    }
+
+    /// What "Instalar o recomendado" downloads here: sentences, dictionary,
+    /// a voice (0.vvm, plus the voice runtime the first time) and the local
+    /// model that fits this device's memory.
+    pub fn recommended_setup(&self) -> Result<RecommendedSetup> {
+        let status = self.status()?;
+        let model = local_llm::find(setup::pick_model(setup::total_ram(), cfg!(target_os = "android")))
+            .context("modelo recomendado fora do catálogo")?;
+        let mut items = vec![
+            SetupItem { id: "tatoeba".into(), label: "Frases".into(), bytes: setup::TATOEBA_BYTES, done: status.tatoeba_indexed > 0 },
+            SetupItem { id: "dict".into(), label: "Dicionário".into(), bytes: setup::DICT_BYTES, done: status.dictionary_loaded },
+        ];
+        if let (Some((ort, _)), Some(pack)) = (tts::embedded::ORT, tts::PACKS.iter().find(|p| p.file == "0.vvm")) {
+            let core = if self.voice_core_installed() { 0 } else { ort.size + tts::embedded::DICT.size };
+            let done = self.packs_dir().join(pack.file).exists();
+            items.push(SetupItem { id: "voice".into(), label: "Voz".into(), bytes: pack.size + core, done });
+        }
+        items.push(SetupItem {
+            id: "model".into(),
+            label: format!("IA ({})", model.name),
+            bytes: model.size,
+            done: self.model_path(model).exists(),
+        });
+        Ok(RecommendedSetup {
+            model_id: model.id.into(),
+            model_name: model.name.into(),
+            total_bytes: items.iter().filter(|i| !i.done).map(|i| i.bytes).sum(),
+            items,
+        })
     }
 
     // ---- local models ----
@@ -356,6 +512,12 @@ impl Engine {
         let m = local_llm::find(id).context("modelo desconhecido")?;
         let asset = assets::Asset { url: m.url, size: m.size, sha256: m.sha256 };
         assets::download(&asset, &self.model_path(m), progress).await
+    }
+
+    /// Pauses the model and voice downloads in progress; they fail with
+    /// `download:paused` and resume from the partial file when started again.
+    pub fn cancel_downloads(&self) {
+        assets::cancel_downloads();
     }
 
     pub fn delete_model(&self, id: &str) -> Result<()> {
@@ -538,10 +700,18 @@ impl Engine {
 
     /// Sends cards to a running Anki. Returns how many were added.
     pub async fn export_anki_connect(&self, inputs: &[CardInput], with_audio: bool) -> Result<usize> {
-        let cards = self.build_cards(inputs, with_audio).await?;
         let s = self.settings();
         let client = anki::AnkiConnect::new(Some(s.anki_connect_url.clone()));
+        // Fail before generating audio, which is the slow part.
+        client.check().await?;
+        let cards = self.build_cards(inputs, with_audio).await?;
         Ok(client.add_cards(&s.deck, &cards, &tags()).await?)
+    }
+
+    /// Checks the AnkiConnect connection. Returns the add-on version.
+    pub async fn anki_test(&self) -> Result<u32> {
+        let client = anki::AnkiConnect::new(Some(self.settings().anki_connect_url.clone()));
+        Ok(client.check().await?)
     }
 
     // ---- study (decks inside the app) ----
@@ -582,7 +752,11 @@ impl Engine {
     pub fn next_card(&self, deck_id: i64) -> Result<Option<StudyView>> {
         let card = self.srs.lock().unwrap().next_card(deck_id)?;
         card.map(|card| {
-            Ok(StudyView { furigana_html: self.analyzer.to_html(&card.note.sentence)?, card })
+            Ok(StudyView {
+                furigana_html: self.analyzer.to_html(&card.note.sentence)?,
+                tokens: self.analyzer.analyze(&card.note.sentence)?,
+                card,
+            })
         })
         .transpose()
     }
@@ -690,6 +864,18 @@ fn now_secs() -> i64 {
         .unwrap_or_default()
 }
 
+/// Error text for the UI: AnkiConnect failures become a code the UI turns
+/// into a friendly message (`anki:not_running`, `anki:no_addon`,
+/// `anki:incompatible:<v>`); anything else is its plain message.
+pub fn error_text(e: &anyhow::Error) -> String {
+    match e.downcast_ref::<anki::Error>() {
+        Some(anki::Error::NotRunning) => "anki:not_running".into(),
+        Some(anki::Error::NoAddon) => "anki:no_addon".into(),
+        Some(anki::Error::Incompatible(v)) => format!("anki:incompatible:{v}"),
+        _ => e.to_string(),
+    }
+}
+
 fn anki_kind(state: srs::State) -> anki::CardKind {
     match state {
         srs::State::New => anki::CardKind::New,
@@ -719,5 +905,18 @@ fn anki_schedule(n: &srs::ExportedNote) -> anki::Schedule {
                 took_ms: r.took_ms,
             })
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn anki_errors_become_codes() {
+        assert_eq!(error_text(&anki::Error::NotRunning.into()), "anki:not_running");
+        assert_eq!(error_text(&anki::Error::NoAddon.into()), "anki:no_addon");
+        assert_eq!(error_text(&anki::Error::Incompatible(5).into()), "anki:incompatible:5");
+        assert_eq!(error_text(&anyhow::anyhow!("outro")), "outro");
     }
 }

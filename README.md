@@ -2,13 +2,17 @@
 
 App em Rust (Tauri 2), para Windows e Android, para estudar japonês a partir de palavras:
 
-- **Frases de exemplo**: busca frases reais no corpus [Tatoeba](https://tatoeba.org) (encontra qualquer conjugação: buscar `食べる` acha `食べました`, `食べたい`...) e completa com frases geradas por IA quando faltar: uma **IA local** (Gemma 4 via llama.cpp, offline) ou o Claude (online, opcional).
+- **Frases de exemplo**: busca frases reais no corpus [Tatoeba](https://tatoeba.org) (encontra qualquer conjugação: buscar `食べる` acha `食べました`, `食べたい`...) e completa com frases geradas por IA quando faltar: uma **IA local** (Gemma 4 via llama.cpp, offline) ou, online e opcional, o Claude ou qualquer modelo do [OpenRouter](https://openrouter.ai).
 - **Estudo dentro do app**: decks com revisão espaçada (FSRS, o mesmo algoritmo do Anki), frente e verso com furigana e áudio, limites diários, importação de `.apkg` e backup para levar os decks entre PC e celular. Não precisa do Anki.
 - **Anki**: envia direto para o Anki aberto (AnkiConnect) ou salva um `.apkg`. Os cards têm furigana (`{{furigana:}}`), tradução, nota e áudio opcional.
 - **PDF com furigana**: das frases selecionadas ou de um texto livre, com Typst.
 - **Áudio**: vozes VOICEVOX embutidas no app (VOICEVOX CORE, offline) ou o programa VOICEVOX aberto, para ouvir frases e textos e gravar o áudio nos cards.
+- **Detalhamento da frase**: cada frase mostra o vocabulário palavra a palavra (forma de dicionário, leitura e significado do JMdict). **Traduzir com IA** passa os significados para o seu idioma (com cache) e **Copiar** gera um texto simples com a frase, a tradução e o vocabulário. Na aba Texto, cada linha tem o mesmo detalhamento, e a IA traduz também a frase.
+- **Cores por classe de palavra**: substantivos, verbos, partículas, adjetivos/advérbios e auxiliares com cores diferentes na frase (Frases, Estudar e Texto). As cores mudam clicando na legenda, separadas para o tema claro e o escuro, e podem ser desligadas.
+- **Temas claro e escuro** (ou o do sistema), tamanho ajustável do japonês e navegação lateral no PC / barra inferior no celular.
 - **Dicionário**: JMdict (significados e tipo do verbo).
-- **PC e Android**: a mesma interface se ajusta à tela do celular. Na primeira vez, o app mostra o que baixar e o tamanho de cada item.
+- **Anki com teste de conexão**: em Configurações › Anki, **Testar conexão** diz se o Anki está aberto e se falta o add-on AnkiConnect (código `2055492159`), com o passo a passo; sempre dá para salvar um `.apkg`.
+- **PC e Android**: a mesma interface se ajusta à tela do celular. Na primeira vez, **Instalar o recomendado** baixa frases, dicionário, uma voz e o modelo de IA certo para a memória do aparelho, com uma barra só e pausa; ou use o Claude em vez de baixar a IA. Se faltar algo depois, o app abre uma configuração rápida daquele item.
 
 ## Baixar
 
@@ -32,6 +36,7 @@ Na primeira vez, o app mostra o que baixar (frases, dicionário, voz e IA) e o t
 | Anki + [AnkiConnect](https://ankiweb.net/shared/info/2055492159) | enviar cards direto | No Anki: Ferramentas › Complementos › Obter → código `2055492159` |
 | Modelo de IA local | gerar frases offline | Baixado pelo app (Configurações → IA): Gemma 4 E4B (5,2 GB) ou E2B (3,3 GB) |
 | Chave da API do Claude | gerar frases online (opcional) | Variável `ANTHROPIC_API_KEY` ou campo nas Configurações |
+| Chave do OpenRouter | gerar frases online com outros modelos (opcional) | Variável `OPENROUTER_API_KEY` ou campo nas Configurações |
 
 Todos são opcionais: sem vozes não há áudio, sem Anki use o `.apkg`, sem modelo de IA use só o corpus.
 
@@ -112,7 +117,7 @@ cargo run -p jp-cli -- speak "こんにちは" -o oi.wav
 ```
 crates/
   jp-core/    análise morfológica (lindera + IPADIC), lemas, alinhamento de furigana
-  sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, cliente do Claude
+  sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, clientes do Claude e do OpenRouter
   local-llm/  IA local: llama.cpp + gramática JSON, catálogo de modelos
   assets/     downloads grandes com retomada e SHA-256
   dict/       JMdict (jmdict-simplified) em SQLite

@@ -17,5 +17,6 @@ pdf.workspace = true
 tts.workspace = true
 local-llm.workspace = true
 assets.workspace = true
-tokio = { workspace = true, features = ["rt"] }
+tokio = { workspace = true, features = ["rt", "sync"] }
 srs.workspace = true
+sysinfo.workspace = true
