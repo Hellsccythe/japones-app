@@ -6,6 +6,9 @@ export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 }
 
+/** Bytes as "3,5 GB". */
+export const gb = (bytes) => (bytes / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' GB';
+
 const cls = (c) => (CLASSES.includes(c) ? c : 'other');
 
 /** Furigana segments as HTML with `<ruby>` on the ones that have a reading. */

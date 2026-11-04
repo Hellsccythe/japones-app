@@ -193,6 +193,11 @@
             <div id="claudeBox">
               <p class="hint">Online, precisa de uma chave da API da Anthropic.</p>
               <label>Chave da API <input name="anthropic_api_key" type="password" placeholder="vazio = usa ANTHROPIC_API_KEY"></label>
+              <div class="row">
+                <button type="button" id="claudeTest" class="secondary" data-icon="refresh">Testar</button>
+                <a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a>
+                <span id="claudeResult" class="hint"></span>
+              </div>
               <label>Modelo <input name="model"></label>
             </div>
             <details class="adv">
@@ -333,32 +338,76 @@
 
   <div id="setup" class="overlay hidden" role="dialog" aria-labelledby="setupTitle">
     <div class="sheet">
-      <h2 id="setupTitle">Primeiros passos</h2>
-      <p class="hint">Baixe o que for usar. Tudo fica no aparelho e funciona offline depois. Só as frases são necessárias para começar; o resto dá para baixar depois em Configurações.</p>
-      <ol class="steps">
+      <div class="row head"><h2 id="setupTitle">Primeiros passos</h2><span class="grow"></span>
+        <button type="button" id="setupClose" class="btn-icon" title="Fechar" aria-label="Fechar" data-icon="x"></button></div>
+      <p class="hint">Tudo fica no aparelho e funciona offline depois. Melhor baixar no Wi-Fi.</p>
+
+      <div id="setupRec" class="rec">
+        <strong>Instalar o recomendado</strong>
+        <p id="setupSummary" class="rec-summary"></p>
+        <ul id="setupItems" class="rec-items"></ul>
+        <div id="setupTerms" class="terms hidden">
+          <p>As vozes VOICEVOX são livres para uso comercial e não comercial; ao publicar um áudio, dê o crédito da voz.
+            <a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">ler termos</a></p>
+          <label class="sw-row"><span>Li e aceito os termos das vozes</span>
+            <span class="switch"><input type="checkbox" id="setupTermsOk"><span></span></span></label>
+        </div>
+        <div id="setupProgress" class="hidden">
+          <progress id="setupBar" max="1" value="0"></progress>
+          <small id="setupNow" class="hint"></small>
+        </div>
+        <div class="row">
+          <button type="button" id="setupInstall" data-icon="download"><span>Instalar o recomendado</span></button>
+          <button type="button" id="setupPause" class="ghost hidden">Pausar</button>
+        </div>
+      </div>
+
+      <div class="row alt">
+        <button type="button" id="setupManual" class="ghost" data-icon="sliders">Escolher eu mesmo</button>
+        <button type="button" id="setupClaude" class="link" data-icon="cloud">Usar o Claude em vez de baixar a IA</button>
+      </div>
+
+      <div id="setupClaudeBox" class="claude-box hidden">
+        <p class="hint">O Claude roda online e precisa de uma chave da API da Anthropic.
+          <a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a></p>
+        <div class="row">
+          <input id="setupClaudeKey" type="password" placeholder="sk-ant-…" aria-label="Chave da API do Claude" autocomplete="off">
+          <button type="button" id="setupClaudeTest" class="ghost">Testar</button>
+        </div>
+        <small id="setupClaudeResult" class="hint"></small>
+      </div>
+
+      <ol id="setupSteps" class="steps hidden">
         <li data-step="tatoeba">
           <div><strong>Frases do Tatoeba</strong> <span class="tag">necessário</span><br>
             <small>Frases reais com tradução, para buscar exemplos de qualquer palavra. ~36 MB.</small>
             <small class="step-log"></small></div>
-          <button data-act="tatoeba">Baixar</button>
+          <button type="button" data-act="tatoeba">Baixar</button>
         </li>
         <li data-step="dict">
           <div><strong>Dicionário JMdict</strong> <span class="tag">recomendado</span><br>
             <small>Significado e leitura da palavra buscada. ~12 MB.</small></div>
-          <button data-act="dict">Baixar</button>
+          <button type="button" data-act="dict">Baixar</button>
         </li>
         <li data-step="voice">
           <div><strong>Voz (VOICEVOX)</strong> <span class="tag opt">opcional</span><br>
             <small>Para ouvir as frases e pôr áudio nos cards. ~90 MB na primeira voz; é preciso aceitar os termos.</small></div>
-          <button data-act="voice" class="secondary">Escolher voz</button>
+          <button type="button" data-act="voice" class="secondary">Escolher voz</button>
         </li>
         <li data-step="llm">
           <div><strong>IA local</strong> <span class="tag opt">opcional</span><br>
-            <small>Gera frases novas quando o corpus tem poucas. <span id="setupModelSize"></span></small></div>
-          <button data-act="llm" class="secondary">Escolher modelo</button>
+            <small>Gera frases novas e traduz o vocabulário. <span id="setupModelSize"></span></small></div>
+          <button type="button" data-act="llm" class="secondary">Escolher modelo</button>
         </li>
       </ol>
-      <div class="row"><span class="grow"></span><button id="setupClose">Começar</button></div>
+    </div>
+  </div>
+
+  <div id="quick" class="overlay hidden" role="dialog" aria-labelledby="quickTitle">
+    <div class="sheet narrow">
+      <div class="row head"><h2 id="quickTitle"></h2><span class="grow"></span>
+        <button type="button" id="quickClose" class="btn-icon" title="Fechar" aria-label="Fechar" data-icon="x"></button></div>
+      <div id="quickBody"></div>
     </div>
   </div>
 

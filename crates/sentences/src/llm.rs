@@ -9,6 +9,7 @@ use crate::{Error, Example, Result};
 
 pub const DEFAULT_MODEL: &str = "claude-opus-5-5";
 const API_URL: &str = "https://api.anthropic.com/v1/messages";
+const MODELS_URL: &str = "https://api.anthropic.com/v1/models?limit=1";
 const API_VERSION: &str = "2026-10-21";
 const FALLBACK_BETA: &str = "server-side-fallback-2026-07-01";
 
@@ -30,6 +31,18 @@ impl LlmClient {
     pub async fn generate(&self, req: &GenerateRequest) -> Result<Vec<Example>> {
         let value = self.ask(prompt::SYSTEM, &prompt::user_prompt(req), prompt::schema(None), 16000).await?;
         parse_response(&value, &self.model)
+    }
+
+    /// Checks the key by listing one model: generates no tokens, costs nothing.
+    pub async fn check(&self) -> Result<()> {
+        let resp = self
+            .http
+            .get(MODELS_URL)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", API_VERSION)
+            .send()
+            .await?;
+        check_status(resp.status().as_u16())
     }
 
     /// Short meanings in `language` for `(base, english gloss)` pairs, one per word.
@@ -83,6 +96,15 @@ impl LlmClient {
     }
 }
 
+/// Result of the key check (`GET /v1/models`) by HTTP status.
+fn check_status(status: u16) -> Result<()> {
+    match status {
+        200..=299 => Ok(()),
+        401 | 403 => Err(Error::Api("chave inválida".into())),
+        s => Err(Error::Api(format!("a API respondeu {s}"))),
+    }
+}
+
 /// Extracts the sentences from a successful Messages API response.
 fn parse_response(value: &serde_json::Value, requested_model: &str) -> Result<Vec<Example>> {
     let text = response_text(value)?;
@@ -128,6 +150,13 @@ mod tests {
         let out = parse_response(&resp, "x").unwrap();
         assert_eq!(out[0].japanese, "パンを食べる。");
         assert_eq!(out[0].source, Source::Llm { model: "claude-opus-5-5".into() });
+    }
+
+    #[test]
+    fn models_check_status() {
+        assert!(check_status(200).is_ok());
+        assert!(matches!(check_status(401), Err(Error::Api(m)) if m.contains("chave inválida")));
+        assert!(matches!(check_status(500), Err(Error::Api(_))));
     }
 
     #[test]

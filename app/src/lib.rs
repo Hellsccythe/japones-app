@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use base64::Engine as _;
-use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, Settings, Status, StudyView, VocabEntry, VoiceStatus, WordInfo};
+use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, RecommendedSetup, Settings, Status, StudyView, VocabEntry, VoiceStatus, WordInfo};
 use jp_core::{Segment, Token};
 use serde::Serialize;
 use tauri::{Emitter, Manager, State};
@@ -209,6 +209,22 @@ async fn import_dictionary(engine: State<'_, Engine>) -> CmdResult<usize> {
 }
 
 #[tauri::command]
+fn recommended_setup(engine: State<'_, Engine>) -> CmdResult<RecommendedSetup> {
+    engine.recommended_setup().map_err(err)
+}
+
+#[tauri::command]
+async fn test_claude(engine: State<'_, Engine>, key: String) -> CmdResult<()> {
+    engine.test_claude(&key).await.map_err(err)
+}
+
+/// Pauses the model/voice downloads in progress (they resume from the partial file).
+#[tauri::command]
+fn cancel_downloads(engine: State<'_, Engine>) {
+    engine.cancel_downloads();
+}
+
+#[tauri::command]
 fn models(engine: State<'_, Engine>) -> Vec<ModelView> {
     engine.models()
 }
@@ -360,6 +376,9 @@ pub fn run() {
             export_text_pdf,
             import_tatoeba,
             import_dictionary,
+            recommended_setup,
+            test_claude,
+            cancel_downloads,
             models,
             download_model,
             delete_model,

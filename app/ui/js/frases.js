@@ -8,6 +8,7 @@ import { icon } from './icons.js';
 import { tokensHtml, vocabHtml, legendHtml, copyText } from './render.js';
 import { openPalette } from './palette.js';
 import { needsAiSetup } from './ia.js';
+import { openQuickSetup, ensureReady } from './setup.js';
 
 /** Selected cards, keyed by sentence so the same one isn't added twice. */
 const selected = new Map();
@@ -125,16 +126,12 @@ function translateVocab(btn) {
       ex.vocab = await invoke('translate_vocabulary', { entries: ex.vocab });
       renderVocab(el, ex);
     } catch (err) {
-      if (needsAiSetup(err)) aiSetup();
+      if (needsAiSetup(err)) openQuickSetup('ia');
       else toast('IA: ' + err, true);
     }
   });
 }
 
-/** The AI is off or not configured: take the user to where it's set up. */
-function aiSetup() {
-  openSection('ia');
-}
 
 function togglePick(btn) {
   const el = btn.closest('.ex');
@@ -224,7 +221,7 @@ export function init() {
   $('#examples').addEventListener('click', (e) => {
     const btn = e.target.closest('button');
     if (!btn || !btn.closest('.ex')) return;
-    if (btn.classList.contains('play')) return play(exampleAt(btn).japanese, btn);
+    if (btn.classList.contains('play')) return ensureReady('voz').then((ok) => ok && play(exampleAt(btn).japanese, btn));
     if (btn.classList.contains('details')) return toggleDetails(btn);
     if (btn.classList.contains('pick')) return togglePick(btn);
     if (btn.classList.contains('copy')) return copyVocab(btn);
@@ -256,6 +253,7 @@ export function init() {
     const count = searchCount();
     currentWord = word;
     busy(e.submitter ?? $('#search [type=submit]'), async () => {
+      if (!(await ensureReady('frases'))) return;
       showWordInfo(word);
       shown = (await invoke('corpus_examples', { word, count })).map(flatten);
       if (fillWithLlm() && shown.length < count) {
@@ -275,6 +273,7 @@ export function init() {
     if (!word) return $('#word').focus();
     currentWord = word;
     busy(e.currentTarget, async () => {
+      if (!(await ensureReady('ia'))) return;
       showWordInfo(word);
       shown = (await invoke('generated_examples', { word, count: searchCount() })).map(flatten);
       renderExamples(word);

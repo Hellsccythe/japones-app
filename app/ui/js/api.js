@@ -43,9 +43,8 @@ export async function busy(btn, fn) {
   }
 }
 
-export { escapeHtml } from './render.js';
+export { escapeHtml, gb } from './render.js';
 
-export const gb = (bytes) => (bytes / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' GB';
 
 let currentAudio;
 export async function play(text, btn) {

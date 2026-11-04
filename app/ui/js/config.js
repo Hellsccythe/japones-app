@@ -386,6 +386,19 @@ export function init() {
       }
     }),
   );
+  $('#claudeTest').addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      const out = $('#claudeResult');
+      try {
+        await invoke('test_claude', { key: form().elements.anthropic_api_key.value });
+        out.textContent = 'Chave ok.';
+        out.className = 'hint ok';
+      } catch (err) {
+        out.textContent = String(err);
+        out.className = 'hint bad';
+      }
+    }),
+  );
   $('#copyAnkiCode').addEventListener('click', () =>
     navigator.clipboard.writeText($('#ankiCode').textContent).then(() => toast('Código copiado.')),
   );

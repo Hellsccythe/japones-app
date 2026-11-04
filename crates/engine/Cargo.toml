@@ -19,3 +19,4 @@ local-llm.workspace = true
 assets.workspace = true
 tokio = { workspace = true, features = ["rt"] }
 srs.workspace = true
+sysinfo.workspace = true

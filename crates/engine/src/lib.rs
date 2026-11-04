@@ -5,6 +5,7 @@
 //! and can run as Tauri commands.
 
 mod settings;
+mod setup;
 mod vocab;
 
 use std::path::{Path, PathBuf};
@@ -17,6 +18,7 @@ use jp_core::{Analyzer, Segment, Token};
 use serde::{Deserialize, Serialize};
 
 pub use settings::{PosColors, Settings};
+pub use setup::{RecommendedSetup, SetupItem};
 pub use vocab::VocabEntry;
 pub use sentences::{Example, Source};
 
@@ -396,6 +398,45 @@ impl Engine {
         Ok(llm)
     }
 
+    /// Checks a Claude API key (the one typed, or the saved one when empty).
+    pub async fn test_claude(&self, key: &str) -> Result<()> {
+        let key = Some(key.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .or_else(|| self.settings().api_key())
+            .context("Digite a chave da API do Claude")?;
+        Ok(sentences::LlmClient::new(key, None).check().await?)
+    }
+
+    /// What "Instalar o recomendado" downloads here: sentences, dictionary,
+    /// a voice (0.vvm, plus the voice runtime the first time) and the local
+    /// model that fits this device's memory.
+    pub fn recommended_setup(&self) -> Result<RecommendedSetup> {
+        let status = self.status()?;
+        let model = local_llm::find(setup::pick_model(setup::total_ram(), cfg!(target_os = "android")))
+            .context("modelo recomendado fora do catálogo")?;
+        let mut items = vec![
+            SetupItem { id: "tatoeba".into(), label: "Frases".into(), bytes: setup::TATOEBA_BYTES, done: status.tatoeba_indexed > 0 },
+            SetupItem { id: "dict".into(), label: "Dicionário".into(), bytes: setup::DICT_BYTES, done: status.dictionary_loaded },
+        ];
+        if let (Some((ort, _)), Some(pack)) = (tts::embedded::ORT, tts::PACKS.iter().find(|p| p.file == "0.vvm")) {
+            let core = if self.voice_core_installed() { 0 } else { ort.size + tts::embedded::DICT.size };
+            let done = self.packs_dir().join(pack.file).exists();
+            items.push(SetupItem { id: "voice".into(), label: "Voz".into(), bytes: pack.size + core, done });
+        }
+        items.push(SetupItem {
+            id: "model".into(),
+            label: format!("IA ({})", model.name),
+            bytes: model.size,
+            done: self.model_path(model).exists(),
+        });
+        Ok(RecommendedSetup {
+            model_id: model.id.into(),
+            model_name: model.name.into(),
+            total_bytes: items.iter().filter(|i| !i.done).map(|i| i.bytes).sum(),
+            items,
+        })
+    }
+
     // ---- local models ----
 
     fn model_path(&self, m: &local_llm::ModelInfo) -> PathBuf {
@@ -422,6 +463,12 @@ impl Engine {
         let m = local_llm::find(id).context("modelo desconhecido")?;
         let asset = assets::Asset { url: m.url, size: m.size, sha256: m.sha256 };
         assets::download(&asset, &self.model_path(m), progress).await
+    }
+
+    /// Pauses the model and voice downloads in progress; they fail with
+    /// `download:paused` and resume from the partial file when started again.
+    pub fn cancel_downloads(&self) {
+        assets::cancel_downloads();
     }
 
     pub fn delete_model(&self, id: &str) -> Result<()> {

@@ -1,6 +1,7 @@
 // "Texto" tab: furigana, audio and PDF for any text.
 
 import { $, invoke, dialog, toast, busy, play } from './api.js';
+import { ensureReady } from './setup.js';
 
 export function init() {
   $('#showFurigana').addEventListener('click', (e) =>
@@ -18,12 +19,13 @@ export function init() {
     const b = e.target.closest('.play');
     if (!b) return;
     const lines = JSON.parse($('#textOut').dataset.lines || '[]');
-    play(lines[b.dataset.i], b);
+    ensureReady('voz').then((ok) => ok && play(lines[b.dataset.i], b));
   });
 
   $('#playText').addEventListener('click', (e) => {
     const text = $('#text').value.trim();
-    if (text) play(text, e.currentTarget);
+    const btn = e.currentTarget;
+    if (text) ensureReady('voz').then((ok) => ok && play(text, btn));
   });
 
   $('#hideRt').addEventListener('change', (e) => $('#textOut').classList.toggle('hide-rt', e.target.checked));
