@@ -63,8 +63,8 @@
           <tbody id="deckList"></tbody>
         </table>
         <div class="row">
-          <button id="newDeck" class="secondary">Novo deck</button>
-          <button id="importApkg" class="secondary">Importar .apkg</button>
+          <button id="newDeck" class="secondary" data-icon="plus">Novo deck</button>
+          <button id="importApkg" class="secondary" data-icon="upload">Importar .apkg</button>
         </div>
         <form id="deckEdit" class="settings hidden">
           <fieldset>
@@ -74,10 +74,10 @@
             <label>Revisões por dia <input name="reviews_per_day" type="number" min="0" max="99999"></label>
             <div class="row">
               <button type="submit">Salvar</button>
-              <button type="button" id="exportDeck" class="secondary">Exportar .apkg</button>
-              <label class="inline"><input type="checkbox" id="deckAudio"> com áudio</label>
+              <button type="button" id="exportDeck" class="secondary" data-icon="download">Exportar .apkg</button>
+              <label class="sw-inline"><span class="switch"><input type="checkbox" id="deckAudio"><span></span></span> com áudio</label>
               <span class="grow"></span>
-              <button type="button" id="deleteDeck" class="danger">Apagar deck</button>
+              <button type="button" id="deleteDeck" class="danger" data-icon="trash">Apagar deck</button>
               <button type="button" id="closeDeckEdit" class="link">Fechar</button>
             </div>
           </fieldset>
@@ -86,10 +86,10 @@
 
       <div id="studyView" class="study hidden">
         <div class="study-top">
-          <button id="leaveStudy" class="link">‹ Decks</button>
+          <button id="leaveStudy" class="link" data-icon="chevron-left">Decks</button>
           <strong id="studyDeck"></strong>
           <span id="studyCounts" class="counts"></span>
-          <label class="inline" title="Tocar o áudio ao mostrar a resposta"><input type="checkbox" id="autoPlay" checked> áudio automático</label>
+          <label class="sw-inline" title="Tocar o áudio ao mostrar a resposta"><span class="switch"><input type="checkbox" id="autoPlay" checked><span></span></span> áudio automático</label>
         </div>
         <div id="card" class="card">
           <div class="front">
@@ -100,7 +100,7 @@
             <div id="cardFurigana" class="sentence jp"></div>
             <div id="cardTranslation" class="translation"></div>
             <div id="cardNote" class="meta"></div>
-            <button id="cardPlay" class="icon play" title="Ouvir (R)">▶</button>
+            <button id="cardPlay" class="btn-icon play" title="Ouvir (R)" aria-label="Ouvir" data-icon="volume"></button>
           </div>
         </div>
         <div id="showRow" class="answer-row">
@@ -118,16 +118,18 @@
 
     <!-- Texto -->
     <section id="tab-texto" class="panel">
-      <textarea id="text" rows="8" placeholder="Cole um texto em japonês. Cada linha vira um parágrafo."></textarea>
+      <div class="texto">
+      <textarea id="text" rows="8" placeholder="Cole um texto em japonês. Cada linha vira um parágrafo." aria-label="Texto em japonês"></textarea>
       <div class="row">
-        <button id="showFurigana">Mostrar furigana</button>
-        <button id="playText" class="secondary">▶ Ouvir</button>
-        <label class="inline"><input type="checkbox" id="hideRt"> Esconder leitura (passe o mouse para ver)</label>
+        <button id="showFurigana" data-icon="book">Mostrar furigana</button>
+        <button id="playText" class="ghost" data-icon="volume">Ouvir</button>
+        <label class="sw-inline" title="Passe o mouse (ou toque) para ver"><span class="switch"><input type="checkbox" id="hideRt"><span></span></span> Esconder leitura</label>
         <span class="grow"></span>
-        <label class="inline"><input type="checkbox" id="textPdfFurigana" checked> Furigana no PDF</label>
-        <button id="textPdf" class="secondary">Salvar PDF</button>
+        <label class="sw-inline"><span class="switch"><input type="checkbox" id="textPdfFurigana" checked><span></span></span> Furigana no PDF</label>
+        <button id="textPdf" class="ghost" data-icon="file">Salvar PDF</button>
       </div>
       <div id="textOut" class="text-out jp"></div>
+      </div>
     </section>
 
     <!-- Configurações -->

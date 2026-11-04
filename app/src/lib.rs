@@ -17,6 +17,8 @@ fn err(e: impl std::fmt::Display) -> String {
 struct Furigana {
     segments: Vec<Segment>,
     html: String,
+    /// Morphemes with word class, to color the text.
+    tokens: Vec<Token>,
 }
 
 #[tauri::command]
@@ -37,7 +39,8 @@ fn save_settings(engine: State<'_, Engine>, settings: Settings) -> CmdResult<()>
 #[tauri::command]
 fn furigana(engine: State<'_, Engine>, text: String) -> CmdResult<Furigana> {
     let segments = engine.furigana(&text).map_err(err)?;
-    Ok(Furigana { html: jp_core::render_html(&segments), segments })
+    let tokens = engine.analyze(&text).map_err(err)?;
+    Ok(Furigana { html: jp_core::render_html(&segments), segments, tokens })
 }
 
 #[tauri::command]

@@ -46,3 +46,8 @@ test('legendHtml has one clickable dot per class', () => {
   for (const c of ['noun', 'verb', 'particle', 'adjective', 'auxiliary']) assert.match(html, new RegExp(`data-class="${c}"`));
   assert.match(html, /adj\.\/adv\./);
 });
+
+test('tokensHtml without ruby keeps the colors and drops the readings', () => {
+  const html = tokensHtml([{ surface: '見学', class: 'noun', segments: [{ text: '見学', reading: 'けんがく' }] }], { ruby: false });
+  assert.equal(html, '<span class="w w-noun">見学</span>');
+});

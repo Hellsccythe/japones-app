@@ -2,6 +2,8 @@
 
 import { $, invoke, dialog, toast, busy, play } from './api.js';
 import { ensureReady } from './setup.js';
+import { tokensHtml } from './render.js';
+import { icon } from './icons.js';
 
 export function init() {
   $('#showFurigana').addEventListener('click', (e) =>
@@ -9,7 +11,12 @@ export function init() {
       const lines = $('#text').value.split('\n').filter((l) => l.trim());
       const out = await Promise.all(lines.map((l) => invoke('furigana', { text: l.trim() })));
       $('#textOut').innerHTML = out
-        .map((f, i) => `<p><button class="icon play" data-i="${i}" title="Ouvir">▶</button><span>${f.html}</span></p>`)
+        .map(
+          (f, i) =>
+            `<p><button class="btn-icon play" data-i="${i}" title="Ouvir" aria-label="Ouvir">${icon('volume')}</button><span>${
+              f.tokens?.length ? tokensHtml(f.tokens) : f.html
+            }</span></p>`,
+        )
         .join('');
       $('#textOut').dataset.lines = JSON.stringify(lines);
     }),

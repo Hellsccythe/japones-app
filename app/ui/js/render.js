@@ -18,9 +18,11 @@ export function segmentsHtml(segments) {
     .join('');
 }
 
-/** A sentence as one colored `<span class="w w-<class>">` per token. */
-export function tokensHtml(tokens) {
-  return (tokens ?? []).map((t) => `<span class="w w-${cls(t.class)}">${segmentsHtml(t.segments)}</span>`).join('');
+/** A sentence as one colored `<span class="w w-<class>">` per token; `ruby: false` leaves the readings out. */
+export function tokensHtml(tokens, { ruby = true } = {}) {
+  return (tokens ?? [])
+    .map((t) => `<span class="w w-${cls(t.class)}">${ruby ? segmentsHtml(t.segments) : escapeHtml(t.surface)}</span>`)
+    .join('');
 }
 
 const noBrackets = (s) => String(s ?? '').replace(/\[/g, '(').replace(/\]/g, ')');

@@ -125,6 +125,8 @@ pub struct StudyView {
     #[serde(flatten)]
     pub card: srs::StudyCard,
     pub furigana_html: String,
+    /// The sentence's morphemes with word class, to color it.
+    pub tokens: Vec<Token>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -703,7 +705,11 @@ impl Engine {
     pub fn next_card(&self, deck_id: i64) -> Result<Option<StudyView>> {
         let card = self.srs.lock().unwrap().next_card(deck_id)?;
         card.map(|card| {
-            Ok(StudyView { furigana_html: self.analyzer.to_html(&card.note.sentence)?, card })
+            Ok(StudyView {
+                furigana_html: self.analyzer.to_html(&card.note.sentence)?,
+                tokens: self.analyzer.analyze(&card.note.sentence)?,
+                card,
+            })
         })
         .transpose()
     }

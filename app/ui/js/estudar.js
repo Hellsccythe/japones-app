@@ -2,6 +2,8 @@
 
 import { $, invoke, dialog, toast, busy, escapeHtml, play, stopAudio } from './api.js';
 import { fillDeckName } from './frases.js';
+import { tokensHtml } from './render.js';
+import { icon } from './icons.js';
 
 let decks = [];
 let editing = null;
@@ -37,7 +39,7 @@ export async function renderDecks() {
         (d) => `<tr data-id="${d.id}">
       <td><button class="deck-name" title="Estudar">${escapeHtml(d.name)}</button><span class="total">${d.counts.total} cards</span></td>
       ${num(d.counts.new, 'new')}${num(d.counts.learning, 'learn')}${num(d.counts.review, 'due')}
-      <td><button class="gear" title="Opções">⚙</button></td>
+      <td><button class="btn-icon gear" title="Opções" aria-label="Opções do deck">${icon('sliders', 16)}</button></td>
     </tr>`,
       )
       .join('') || '<tr><td colspan="5" class="empty">Nenhum deck ainda. Adicione frases em “Frases” ou importe um .apkg.</td></tr>';
@@ -98,9 +100,11 @@ async function nextCard() {
   $('#studyDone').classList.toggle('hidden', !done);
   renderStudyCounts().catch(() => {});
   if (done) return;
-  $('#cardSentence').textContent = studyCard.sentence;
+  const colored = studyCard.tokens?.length;
+  if (colored) $('#cardSentence').innerHTML = tokensHtml(studyCard.tokens, { ruby: false });
+  else $('#cardSentence').textContent = studyCard.sentence;
   $('#cardWord').textContent = studyCard.word;
-  $('#cardFurigana').innerHTML = studyCard.furigana_html;
+  $('#cardFurigana').innerHTML = colored ? tokensHtml(studyCard.tokens) : studyCard.furigana_html;
   $('#cardTranslation').textContent = studyCard.translation;
   $('#cardNote').textContent = studyCard.note;
   $('#cardSentence').classList.remove('hidden');
