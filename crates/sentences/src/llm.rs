@@ -51,11 +51,11 @@ impl LlmClient {
             .ask(
                 vocab_prompt::SYSTEM,
                 &vocab_prompt::user_prompt(words, language),
-                vocab_prompt::schema(words.len()),
+                vocab_prompt::schema(None),
                 4000,
             )
             .await?;
-        vocab_prompt::parse(response_text(&value)?, words.len())
+        vocab_prompt::parse(response_text(&value)?, words)
     }
 
     /// The sentence translated into `language`.

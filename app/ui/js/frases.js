@@ -256,7 +256,8 @@ export function init() {
       if (!(await ensureReady('frases'))) return;
       showWordInfo(word);
       shown = (await invoke('corpus_examples', { word, count })).map(flatten);
-      if (fillWithLlm() && shown.length < count) {
+      // Filling in is optional: without a usable AI the corpus results are enough.
+      if (fillWithLlm() && shown.length < count && (await invoke('status')).llm_ready) {
         try {
           const more = await invoke('generated_examples', { word, count: count - shown.length });
           shown.push(...more.map(flatten));

@@ -25,22 +25,32 @@ export async function loadSettings() {
   loaded = s;
   applyAppearance(s);
   await Promise.all([renderModels(), renderVoices(), renderData()]);
-  for (const [k, v] of Object.entries(s)) {
+  fillForm(s);
+  loadSpeakers().catch(() => {});
+}
+
+/** Shows `fields` in the form, so the next autosave doesn't write the old values back. */
+function fillForm(fields) {
+  for (const [k, v] of Object.entries(fields)) {
     const el = form().elements[k];
-    if (!el || el instanceof RadioNodeList) continue;
-    if (k === 'speaker' && !el.options.length) el.add(new Option(`Voz ${v}`, v));
-    if (el.type === 'checkbox') el.checked = v;
-    else el.value = Array.isArray(v) ? v.join(', ') : v;
+    if (!el) continue;
+    if (el instanceof RadioNodeList) el.value = v;
+    else if (el.type === 'radio') el.checked = el.value === v;
+    else if (el.type === 'checkbox') el.checked = v;
+    else {
+      if (k === 'speaker' && !el.options.length) el.add(new Option(`Voz ${v}`, v));
+      el.value = Array.isArray(v) ? v.join(', ') : v;
+    }
   }
   syncSegs();
   showProvider();
   showBackend();
-  loadSpeakers().catch(() => {});
 }
 
 /** Persists some fields right away (the backend reads them, e.g. before a download). */
 export async function saveSettingsNow(fields) {
   loaded = { ...loaded, ...fields };
+  fillForm(fields);
   await invoke('save_settings', { settings: loaded });
   refreshStatus();
 }

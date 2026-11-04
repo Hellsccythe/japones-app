@@ -78,9 +78,9 @@ impl LocalLlm {
     pub fn translate_vocabulary(&self, words: &[(String, String)], language: &str) -> Result<Vec<String>> {
         let _guard = self.busy.lock().unwrap();
         let text = self.format_prompt(vocab_prompt::SYSTEM, &vocab_prompt::user_prompt(words, language))?;
-        let grammar = llama_cpp_2::json_schema_to_grammar(&vocab_prompt::schema(words.len()).to_string())?;
-        let out = self.complete(&text, &grammar, 50 + 30 * words.len())?;
-        Ok(vocab_prompt::parse(&out, words.len())?)
+        let grammar = llama_cpp_2::json_schema_to_grammar(&vocab_prompt::schema(Some(words.len())).to_string())?;
+        let out = self.complete(&text, &grammar, 50 + 50 * words.len())?;
+        Ok(vocab_prompt::parse(&out, words)?)
     }
 
     /// The sentence translated into `language`. Blocking.

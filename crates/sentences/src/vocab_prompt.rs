@@ -24,19 +24,32 @@ pub fn user_prompt(words: &[(String, String)], language: &str) -> String {
         "Translate the meaning of each Japanese word below into {language}. \
          Each word is in dictionary form, sometimes followed by its English meaning. \
          Give one short meaning per word (one to four words, no explanations, no brackets), \
-         in the same order, written in {language}. For particles and auxiliaries, give their \
+         written in {language}. Answer with one item per word: `word` is the word exactly as \
+         listed and `meaning` its meaning. For particles and auxiliaries, give their \
          grammatical role in a few words.\n\n{}",
         list.join("\n")
     )
 }
 
-/// `{ "translations": [string; count] }`, with the length pinned.
-pub fn schema(count: usize) -> Value {
+/// `{ "translations": [{word, meaning}] }`. `count` pins the length, which
+/// only the local grammar needs (the remote APIs may reject array limits).
+pub fn schema(count: Option<usize>) -> Value {
+    let mut list = json!({
+        "type": "array",
+        "items": {
+            "type": "object",
+            "properties": {"word": {"type": "string"}, "meaning": {"type": "string"}},
+            "required": ["word", "meaning"],
+            "additionalProperties": false
+        }
+    });
+    if let Some(n) = count {
+        list["minItems"] = json!(n);
+        list["maxItems"] = json!(n);
+    }
     json!({
         "type": "object",
-        "properties": {
-            "translations": {"type": "array", "items": {"type": "string"}, "minItems": count, "maxItems": count}
-        },
+        "properties": {"translations": list},
         "required": ["translations"],
         "additionalProperties": false
     })
@@ -44,14 +57,26 @@ pub fn schema(count: usize) -> Value {
 
 #[derive(serde::Deserialize)]
 struct Translations {
-    translations: Vec<String>,
+    translations: Vec<Item>,
 }
 
-/// Exactly `count` translations: missing ones become "" and extra ones are dropped.
-pub fn parse(text: &str, count: usize) -> Result<Vec<String>> {
+#[derive(serde::Deserialize)]
+struct Item {
+    word: String,
+    meaning: String,
+}
+
+/// One meaning per entry of `words`, matched by dictionary form so a skipped
+/// word can't shift the others; words the AI left out get "".
+pub fn parse(text: &str, words: &[(String, String)]) -> Result<Vec<String>> {
     let t: Translations = serde_json::from_str(text.trim())?;
-    let mut out: Vec<String> = t.translations.into_iter().take(count).map(|s| s.trim().to_string()).collect();
-    out.resize(count, String::new());
+    let mut out = vec![String::new(); words.len()];
+    for item in t.translations {
+        let word = item.word.trim();
+        if let Some(i) = words.iter().enumerate().position(|(i, (base, _))| base == word && out[i].is_empty()) {
+            out[i] = item.meaning.trim().to_string();
+        }
+    }
     Ok(out)
 }
 
@@ -59,23 +84,45 @@ pub fn parse(text: &str, count: usize) -> Result<Vec<String>> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn parse_pads_and_truncates() {
-        assert_eq!(parse(r#"{"translations":["visitar"]}"#, 2).unwrap(), vec!["visitar".to_string(), String::new()]);
-        assert_eq!(parse(r#"{"translations":["a","b","c"]}"#, 2).unwrap().len(), 2);
+    fn words(bases: &[&str]) -> Vec<(String, String)> {
+        bases.iter().map(|b| (b.to_string(), String::new())).collect()
     }
 
     #[test]
-    fn parse_trims_and_rejects_garbage() {
-        assert_eq!(parse(r#" {"translations":[" ir "]} "#, 1).unwrap(), vec!["ir".to_string()]);
-        assert!(parse("not json", 1).is_err());
+    fn a_skipped_word_does_not_shift_the_others() {
+        // Asked for 3, the AI skipped the middle one: meanings stay on their own words.
+        let out = parse(
+            r#"{"translations":[{"word":"見学","meaning":"visita"},{"word":"行く","meaning":"ir"}]}"#,
+            &words(&["見学", "する", "行く"]),
+        )
+        .unwrap();
+        assert_eq!(out, vec!["visita".to_string(), String::new(), "ir".to_string()]);
     }
 
     #[test]
-    fn schema_fixes_count() {
-        let s = schema(3);
+    fn unknown_and_repeated_answers_are_ignored() {
+        let out = parse(
+            r#"{"translations":[{"word":"猫","meaning":"gato"},{"word":"見学","meaning":" visita "},{"word":"見学","meaning":"outra"}]}"#,
+            &words(&["見学"]),
+        )
+        .unwrap();
+        assert_eq!(out, vec!["visita".to_string()]);
+    }
+
+    #[test]
+    fn parse_rejects_garbage() {
+        assert!(parse("not json", &words(&["見学"])).is_err());
+    }
+
+    #[test]
+    fn schema_pins_the_count_only_when_asked() {
+        // The local grammar can enforce the length; the remote APIs don't need it.
+        let s = schema(Some(3));
         assert_eq!(s["properties"]["translations"]["minItems"], 3);
         assert_eq!(s["properties"]["translations"]["maxItems"], 3);
+        let s = schema(None);
+        assert!(s["properties"]["translations"].get("minItems").is_none());
+        assert_eq!(s["properties"]["translations"]["items"]["required"], json!(["word", "meaning"]));
     }
 
     #[test]

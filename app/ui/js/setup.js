@@ -54,7 +54,7 @@ async function installItem(item) {
 async function install() {
   const p = plan();
   const todo = pendingItems(p);
-  if (todo.some((i) => i.id === 'voice') && !$('#setupTermsOk').checked) {
+  if (todo.some((i) => i.id === 'voice') && !getLoaded().voice_terms_accepted && !$('#setupTermsOk').checked) {
     toast('Aceite os termos das vozes para instalar a voz.', true);
     $('#setupTermsOk').focus();
     return;

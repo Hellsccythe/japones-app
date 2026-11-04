@@ -110,6 +110,8 @@ pub struct Engine {
     models_dir: PathBuf,
     /// Local model kept in memory after first use, with its catalog id.
     local: Mutex<Option<(String, Arc<LocalLlm>)>>,
+    /// Held while a model loads, so two requests don't load it twice at once.
+    loading: tokio::sync::Mutex<()>,
     /// ONNX Runtime, dictionary and voice packs for the embedded voice.
     voice_dir: PathBuf,
     /// Synthesized WAVs by text + voice + speed, shared by the player and the cards.
@@ -150,6 +152,7 @@ impl Engine {
             settings_path,
             models_dir: data_dir.join("models"),
             local: Mutex::new(None),
+            loading: tokio::sync::Mutex::new(()),
             voice_dir: data_dir.join("voice"),
             audio_cache_dir: data_dir.join("audio-cache"),
             embedded_tts: Mutex::new(None),
@@ -416,6 +419,7 @@ impl Engine {
         let s = self.settings();
         let info = local_llm::find(&s.local_model)
             .context("modelo local desconhecido; escolha outro nas configurações")?;
+        let _loading = self.loading.lock().await;
         if let Some((id, llm)) = self.local.lock().unwrap().as_ref() {
             if id == info.id {
                 return Ok(llm.clone());

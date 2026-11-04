@@ -471,11 +471,12 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
   #showAnswer { flex: 1; }
   kbd { display: none; }
 }
-/* Android's WebView draws under the gesture bar but reports no safe-area inset. */
-.android .sidebar { height: calc(var(--nav-h) + 24px); padding-bottom: 24px; }
-.android .answer-row { bottom: calc(var(--nav-h) + 24px); }
-.android main { padding-bottom: calc(var(--nav-h) + 40px); }
+/* Android's WebView draws under the gesture bar but reports no safe-area inset.
+   Only the phone layout has the bottom bar; wider screens keep the side rail. */
 @media (max-width: 600px) {
+  .android .sidebar { height: calc(var(--nav-h) + 24px); padding-bottom: 24px; }
+  .android .answer-row { bottom: calc(var(--nav-h) + 24px); }
+  .android main { padding-bottom: calc(var(--nav-h) + 40px); }
   .android .sel-bar { bottom: calc(var(--nav-h) + 32px); }
   .android.has-sel main, .android .has-sel main { padding-bottom: calc(var(--nav-h) + 180px); }
 }
