@@ -59,6 +59,11 @@ async fn translate_vocabulary(engine: State<'_, Engine>, entries: Vec<VocabEntry
 }
 
 #[tauri::command]
+async fn translate_sentence(engine: State<'_, Engine>, text: String) -> CmdResult<String> {
+    engine.translate_sentence(&text).await.map_err(err)
+}
+
+#[tauri::command]
 fn word_info(engine: State<'_, Engine>, word: String) -> CmdResult<WordInfo> {
     engine.word_info(&word).map_err(err)
 }
@@ -372,6 +377,7 @@ pub fn run() {
             analyze,
             vocabulary,
             translate_vocabulary,
+            translate_sentence,
             word_info,
             corpus_examples,
             generated_examples,

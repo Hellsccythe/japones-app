@@ -6,6 +6,7 @@ pub mod openrouter;
 pub mod prompt;
 pub mod store;
 pub mod tatoeba;
+pub mod translate_prompt;
 pub mod vocab_prompt;
 
 use jp_core::Analyzer;

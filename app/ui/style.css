@@ -266,6 +266,12 @@ ruby rt { font-size: .5em; color: var(--muted); }
 .text-out { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; font-size: var(--jp-size); line-height: 2.3; min-height: 60px; }
 .text-out p { margin: 0 0 .6em; display: flex; gap: 8px; align-items: baseline; }
 .text-out p button { flex: none; font-family: var(--ui); }
+.text-out .t-line p { margin: 0; }
+.text-out .details { margin-left: auto; align-self: center; font-size: 13px; }
+.text-out .vocab { font-family: var(--ui); font-size: 14px; line-height: 1.5; margin: 4px 0 12px; }
+.text-out .v-grid .jp { font-size: 17px; }
+.t-tr { font-size: 14.5px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); }
+.t-tr.none { color: var(--muted); font-style: italic; }
 
 /* ---------- settings: section list + one section ---------- */
 .cfg { display: grid; grid-template-columns: 220px minmax(0, 680px); gap: 24px; align-items: start; }

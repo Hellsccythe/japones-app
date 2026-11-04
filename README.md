@@ -7,7 +7,7 @@ App em Rust (Tauri 2), para Windows e Android, para estudar japonês a partir de
 - **Anki**: envia direto para o Anki aberto (AnkiConnect) ou salva um `.apkg`. Os cards têm furigana (`{{furigana:}}`), tradução, nota e áudio opcional.
 - **PDF com furigana**: das frases selecionadas ou de um texto livre, com Typst.
 - **Áudio**: vozes VOICEVOX embutidas no app (VOICEVOX CORE, offline) ou o programa VOICEVOX aberto, para ouvir frases e textos e gravar o áudio nos cards.
-- **Detalhamento da frase**: cada frase mostra o vocabulário palavra a palavra (forma de dicionário, leitura e significado do JMdict). **Traduzir com IA** passa os significados para o seu idioma (com cache) e **Copiar** gera um texto simples com a frase, a tradução e o vocabulário.
+- **Detalhamento da frase**: cada frase mostra o vocabulário palavra a palavra (forma de dicionário, leitura e significado do JMdict). **Traduzir com IA** passa os significados para o seu idioma (com cache) e **Copiar** gera um texto simples com a frase, a tradução e o vocabulário. Na aba Texto, cada linha tem o mesmo detalhamento, e a IA traduz também a frase.
 - **Cores por classe de palavra**: substantivos, verbos, partículas, adjetivos/advérbios e auxiliares com cores diferentes na frase (Frases, Estudar e Texto). As cores mudam clicando na legenda, separadas para o tema claro e o escuro, e podem ser desligadas.
 - **Temas claro e escuro** (ou o do sistema), tamanho ajustável do japonês e navegação lateral no PC / barra inferior no celular.
 - **Dicionário**: JMdict (significados e tipo do verbo).

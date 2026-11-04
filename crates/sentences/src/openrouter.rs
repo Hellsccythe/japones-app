@@ -5,7 +5,7 @@
 use serde_json::{json, Value};
 
 use crate::prompt::{self, GenerateRequest};
-use crate::vocab_prompt;
+use crate::{translate_prompt, vocab_prompt};
 use crate::{Error, Example, Result};
 
 /// OpenRouter picks a capable model for each request.
@@ -47,6 +47,14 @@ impl OpenRouterClient {
             )
             .await?;
         vocab_prompt::parse(strip_fences(response_text(&value)?), words.len())
+    }
+
+    /// The sentence translated into `language`.
+    pub async fn translate_sentence(&self, sentence: &str, language: &str) -> Result<String> {
+        let value = self
+            .ask(translate_prompt::SYSTEM, &translate_prompt::user_prompt(sentence, language), translate_prompt::schema(), 2000)
+            .await?;
+        translate_prompt::parse(strip_fences(response_text(&value)?))
     }
 
     /// Checks the key with the key-info endpoint: generates nothing, costs nothing.

@@ -313,6 +313,31 @@ impl Engine {
         Ok(entries)
     }
 
+    /// Translates a sentence (from the "Texto" tab) with the selected AI.
+    /// Same `ia:off` / `ia:not_ready` errors as [`Self::translate_vocabulary`].
+    pub async fn translate_sentence(&self, text: &str) -> Result<String> {
+        let s = self.settings();
+        if s.llm_off() {
+            bail!("ia:off");
+        }
+        if !self.llm_ready() {
+            bail!("ia:not_ready");
+        }
+        let lang = s.translation_language_name.clone();
+        if s.uses_claude() {
+            let key = s.api_key().context("ia:not_ready")?;
+            return Ok(sentences::LlmClient::new(key, Some(s.model.clone())).translate_sentence(text, &lang).await?);
+        }
+        if s.uses_openrouter() {
+            let key = s.openrouter_key().context("ia:not_ready")?;
+            let client = sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()));
+            return Ok(client.translate_sentence(text, &lang).await?);
+        }
+        let llm = self.local_llm().await?;
+        let text = text.to_string();
+        tokio::task::spawn_blocking(move || llm.translate_sentence(&text, &lang)).await?
+    }
+
     fn view(&self, example: Example, lemmas: &[String]) -> Result<ExampleView> {
         let segments = self.analyzer.furigana(&example.japanese)?;
         Ok(ExampleView {

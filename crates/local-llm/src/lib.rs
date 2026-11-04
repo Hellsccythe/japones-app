@@ -18,7 +18,7 @@ use llama_cpp_2::model::{LlamaChatMessage, LlamaModel};
 use llama_cpp_2::sampling::LlamaSampler;
 use llama_cpp_2::token::data::LlamaTokenData;
 use llama_cpp_2::token::data_array::LlamaTokenDataArray;
-use sentences::{prompt, vocab_prompt, Example, GenerateRequest};
+use sentences::{prompt, translate_prompt, vocab_prompt, Example, GenerateRequest};
 
 pub use catalog::{find, ModelInfo, DEFAULT_ID, MODELS};
 
@@ -81,6 +81,16 @@ impl LocalLlm {
         let grammar = llama_cpp_2::json_schema_to_grammar(&vocab_prompt::schema(words.len()).to_string())?;
         let out = self.complete(&text, &grammar, 50 + 30 * words.len())?;
         Ok(vocab_prompt::parse(&out, words.len())?)
+    }
+
+    /// The sentence translated into `language`. Blocking.
+    pub fn translate_sentence(&self, sentence: &str, language: &str) -> Result<String> {
+        let _guard = self.busy.lock().unwrap();
+        let text = self.format_prompt(translate_prompt::SYSTEM, &translate_prompt::user_prompt(sentence, language))?;
+        let grammar = llama_cpp_2::json_schema_to_grammar(&translate_prompt::schema().to_string())?;
+        // Roughly three tokens per Japanese character is plenty for the translation.
+        let out = self.complete(&text, &grammar, 60 + 3 * sentence.chars().count())?;
+        Ok(translate_prompt::parse(&out)?)
     }
 
     fn format_prompt(&self, system: &str, user: &str) -> Result<String> {

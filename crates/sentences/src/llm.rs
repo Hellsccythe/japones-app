@@ -4,7 +4,7 @@
 use serde_json::json;
 
 use crate::prompt::{self, GenerateRequest};
-use crate::vocab_prompt;
+use crate::{translate_prompt, vocab_prompt};
 use crate::{Error, Example, Result};
 
 pub const DEFAULT_MODEL: &str = "claude-opus-5-5";
@@ -56,6 +56,14 @@ impl LlmClient {
             )
             .await?;
         vocab_prompt::parse(response_text(&value)?, words.len())
+    }
+
+    /// The sentence translated into `language`.
+    pub async fn translate_sentence(&self, sentence: &str, language: &str) -> Result<String> {
+        let value = self
+            .ask(translate_prompt::SYSTEM, &translate_prompt::user_prompt(sentence, language), translate_prompt::schema(), 2000)
+            .await?;
+        translate_prompt::parse(response_text(&value)?)
     }
 
     /// One Messages API call with structured output; returns the response JSON.
