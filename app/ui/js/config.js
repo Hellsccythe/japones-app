@@ -90,6 +90,8 @@ function collect() {
     voice_terms_accepted: f.voice_terms_accepted?.checked ?? loaded.voice_terms_accepted,
     anthropic_api_key: f.anthropic_api_key.value,
     model: f.model.value,
+    openrouter_api_key: f.openrouter_api_key.value,
+    openrouter_model: f.openrouter_model.value.trim() || 'openrouter/auto',
     level: f.level.value,
     translation_language_name: f.translation_language_name.value,
     translation_langs: f.translation_langs.value.split(',').map((x) => x.trim()).filter(Boolean),
@@ -134,6 +136,7 @@ function showProvider() {
   const p = form().elements.llm_provider.value;
   $('#localBox').classList.toggle('hidden', p !== 'local');
   $('#claudeBox').classList.toggle('hidden', p !== 'claude');
+  $('#openrouterBox').classList.toggle('hidden', p !== 'openrouter');
 }
 
 /** Model ids with a download running in this window. */
@@ -391,6 +394,19 @@ export function init() {
       const out = $('#claudeResult');
       try {
         await invoke('test_claude', { key: form().elements.anthropic_api_key.value });
+        out.textContent = 'Chave ok.';
+        out.className = 'hint ok';
+      } catch (err) {
+        out.textContent = String(err);
+        out.className = 'hint bad';
+      }
+    }),
+  );
+  $('#openrouterTest').addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      const out = $('#openrouterResult');
+      try {
+        await invoke('test_openrouter', { key: form().elements.openrouter_api_key.value });
         out.textContent = 'Chave ok.';
         out.className = 'hint ok';
       } catch (err) {

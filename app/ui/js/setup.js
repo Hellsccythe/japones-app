@@ -141,13 +141,22 @@ function goToSettings(section) {
 }
 
 /** Checks a Claude key; on success it's saved and Claude becomes the AI. */
-async function testAndUseClaude(key, out) {
+const testAndUseClaude = (key, out) => testAndUse('claude', key, out);
+
+const PROVIDERS = {
+  claude: { name: 'o Claude', test: 'test_claude', field: 'anthropic_api_key' },
+  openrouter: { name: 'o OpenRouter', test: 'test_openrouter', field: 'openrouter_api_key' },
+};
+
+/** Checks the key of an online AI; on success it's saved and becomes the AI. */
+async function testAndUse(provider, key, out) {
+  const p = PROVIDERS[provider];
   out.className = 'hint';
   out.textContent = 'Testando…';
   try {
-    await invoke('test_claude', { key });
-    await saveSettingsNow({ llm_provider: 'claude', anthropic_api_key: key.trim() || getLoaded().anthropic_api_key });
-    out.textContent = 'Chave ok. O app vai usar o Claude.';
+    await invoke(p.test, { key });
+    await saveSettingsNow({ llm_provider: provider, [p.field]: key.trim() || getLoaded()[p.field] });
+    out.textContent = `Chave ok. O app vai usar ${p.name}.`;
     out.className = 'hint ok';
     return true;
   } catch (err) {
@@ -205,6 +214,13 @@ export async function openQuickSetup(item) {
         <div class="row"><input id="quickKey" type="password" placeholder="sk-ant-…" aria-label="Chave da API do Claude" autocomplete="off">
           <button type="button" data-q="claude" class="ghost">Testar e usar</button></div>
         <small id="quickKeyResult" class="hint"></small>
+      </div>
+      <div class="quick-opt col">
+        <div><strong>Usar o OpenRouter</strong><small>Online, vários modelos (alguns gratuitos) com uma chave.
+          <a href="https://openrouter.ai/settings/keys" target="_blank">Criar uma chave</a></small></div>
+        <div class="row"><input id="quickOrKey" type="password" placeholder="sk-or-…" aria-label="Chave do OpenRouter" autocomplete="off">
+          <button type="button" data-q="openrouter" class="ghost">Testar e usar</button></div>
+        <small id="quickOrKeyResult" class="hint"></small>
       </div>`,
     voz: () =>
       rec.items.some((i) => i.id === 'voice')
@@ -250,6 +266,11 @@ async function quickAction(btn) {
   if (act === 'claude') {
     return busy(btn, async () => {
       if (await testAndUseClaude($('#quickKey').value, $('#quickKeyResult'))) setTimeout(closeQuick, 800);
+    });
+  }
+  if (act === 'openrouter') {
+    return busy(btn, async () => {
+      if (await testAndUse('openrouter', $('#quickOrKey').value, $('#quickOrKeyResult'))) setTimeout(closeQuick, 800);
     });
   }
   await busy(btn, async () => {

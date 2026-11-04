@@ -2,7 +2,7 @@
 
 App em Rust (Tauri 2), para Windows e Android, para estudar japonês a partir de palavras:
 
-- **Frases de exemplo**: busca frases reais no corpus [Tatoeba](https://tatoeba.org) (encontra qualquer conjugação: buscar `食べる` acha `食べました`, `食べたい`...) e completa com frases geradas por IA quando faltar: uma **IA local** (Gemma 4 via llama.cpp, offline) ou o Claude (online, opcional).
+- **Frases de exemplo**: busca frases reais no corpus [Tatoeba](https://tatoeba.org) (encontra qualquer conjugação: buscar `食べる` acha `食べました`, `食べたい`...) e completa com frases geradas por IA quando faltar: uma **IA local** (Gemma 4 via llama.cpp, offline) ou, online e opcional, o Claude ou qualquer modelo do [OpenRouter](https://openrouter.ai).
 - **Estudo dentro do app**: decks com revisão espaçada (FSRS, o mesmo algoritmo do Anki), frente e verso com furigana e áudio, limites diários, importação de `.apkg` e backup para levar os decks entre PC e celular. Não precisa do Anki.
 - **Anki**: envia direto para o Anki aberto (AnkiConnect) ou salva um `.apkg`. Os cards têm furigana (`{{furigana:}}`), tradução, nota e áudio opcional.
 - **PDF com furigana**: das frases selecionadas ou de um texto livre, com Typst.
@@ -36,6 +36,7 @@ Na primeira vez, o app mostra o que baixar (frases, dicionário, voz e IA) e o t
 | Anki + [AnkiConnect](https://ankiweb.net/shared/info/2055492159) | enviar cards direto | No Anki: Ferramentas › Complementos › Obter → código `2055492159` |
 | Modelo de IA local | gerar frases offline | Baixado pelo app (Configurações → IA): Gemma 4 E4B (5,2 GB) ou E2B (3,3 GB) |
 | Chave da API do Claude | gerar frases online (opcional) | Variável `ANTHROPIC_API_KEY` ou campo nas Configurações |
+| Chave do OpenRouter | gerar frases online com outros modelos (opcional) | Variável `OPENROUTER_API_KEY` ou campo nas Configurações |
 
 Todos são opcionais: sem vozes não há áudio, sem Anki use o `.apkg`, sem modelo de IA use só o corpus.
 
@@ -116,7 +117,7 @@ cargo run -p jp-cli -- speak "こんにちは" -o oi.wav
 ```
 crates/
   jp-core/    análise morfológica (lindera + IPADIC), lemas, alinhamento de furigana
-  sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, cliente do Claude
+  sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, clientes do Claude e do OpenRouter
   local-llm/  IA local: llama.cpp + gramática JSON, catálogo de modelos
   assets/     downloads grandes com retomada e SHA-256
   dict/       JMdict (jmdict-simplified) em SQLite

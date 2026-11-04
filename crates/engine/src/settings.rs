@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
-    /// Sentence generator: "local" (llama.cpp), "claude" or "off".
+    /// Sentence generator: "local" (llama.cpp), "claude", "openrouter" or "off".
     pub llm_provider: String,
     /// Catalog id of the local model (see `local_llm::MODELS`).
     pub local_model: String,
@@ -17,6 +17,10 @@ pub struct Settings {
     /// Empty means "use the ANTHROPIC_API_KEY environment variable".
     pub anthropic_api_key: String,
     pub model: String,
+    /// Empty means "use the OPENROUTER_API_KEY environment variable".
+    pub openrouter_api_key: String,
+    /// Any OpenRouter model id ("vendor/model"); "openrouter/auto" lets it choose.
+    pub openrouter_model: String,
     /// JLPT level hint for generated sentences ("N5".."N1", or empty).
     pub level: String,
     /// Tatoeba translation languages in order of preference (ISO 639-3).
@@ -69,6 +73,8 @@ impl Default for Settings {
             llm_threads: 0,
             anthropic_api_key: String::new(),
             model: sentences::llm::DEFAULT_MODEL.into(),
+            openrouter_api_key: String::new(),
+            openrouter_model: sentences::openrouter::DEFAULT_MODEL.into(),
             level: String::new(),
             translation_langs: vec!["por".into(), "eng".into()],
             translation_language_name: "português".into(),
@@ -112,6 +118,16 @@ impl Settings {
         self.llm_provider == "claude"
     }
 
+    pub fn uses_openrouter(&self) -> bool {
+        self.llm_provider == "openrouter"
+    }
+
+    pub fn openrouter_key(&self) -> Option<String> {
+        Some(self.openrouter_api_key.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .or_else(|| std::env::var("OPENROUTER_API_KEY").ok().filter(|k| !k.is_empty()))
+    }
+
     pub fn llm_off(&self) -> bool {
         self.llm_provider == "off"
     }
@@ -144,5 +160,24 @@ mod tests {
         let s = Settings { llm_provider: "off".into(), ..Settings::default() };
         assert!(s.llm_off());
         assert!(!s.uses_claude());
+    }
+}
+
+#[cfg(test)]
+mod openrouter_tests {
+    use super::*;
+
+    #[test]
+    fn openrouter_provider_and_defaults() {
+        let s: Settings = serde_json::from_str(r#"{"llm_provider":"openrouter"}"#).unwrap();
+        assert!(s.uses_openrouter() && !s.uses_claude() && !s.llm_off());
+        assert_eq!(s.openrouter_model, "openrouter/auto");
+        assert!(s.openrouter_api_key.is_empty());
+    }
+
+    #[test]
+    fn openrouter_key_is_trimmed() {
+        let s = Settings { openrouter_api_key: "  sk-or-1  ".into(), ..Settings::default() };
+        assert_eq!(s.openrouter_key().as_deref(), Some("sk-or-1"));
     }
 }

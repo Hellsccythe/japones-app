@@ -221,6 +221,11 @@ async fn test_claude(engine: State<'_, Engine>, key: String) -> CmdResult<()> {
     engine.test_claude(&key).await.map_err(err)
 }
 
+#[tauri::command]
+async fn test_openrouter(engine: State<'_, Engine>, key: String) -> CmdResult<()> {
+    engine.test_openrouter(&key).await.map_err(err)
+}
+
 /// Pauses the model/voice downloads in progress (they resume from the partial file).
 #[tauri::command]
 fn cancel_downloads(engine: State<'_, Engine>) {
@@ -381,6 +386,7 @@ pub fn run() {
             import_dictionary,
             recommended_setup,
             test_claude,
+            test_openrouter,
             cancel_downloads,
             models,
             download_model,

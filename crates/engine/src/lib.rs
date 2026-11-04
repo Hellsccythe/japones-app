@@ -202,6 +202,8 @@ impl Engine {
             false
         } else if s.uses_claude() {
             s.api_key().is_some()
+        } else if s.uses_openrouter() {
+            s.openrouter_key().is_some()
         } else {
             local_llm::find(&s.local_model).is_some_and(|m| self.model_path(m).exists())
         }
@@ -213,6 +215,8 @@ impl Engine {
             "desligada".into()
         } else if s.uses_claude() {
             "Claude".into()
+        } else if s.uses_openrouter() {
+            format!("OpenRouter ({})", s.openrouter_model)
         } else {
             local_llm::find(&s.local_model).map_or("IA local".into(), |m| m.name.to_string())
         }
@@ -294,6 +298,11 @@ impl Engine {
         let translations = if s.uses_claude() {
             let key = s.api_key().context("ia:not_ready")?;
             sentences::LlmClient::new(key, Some(s.model.clone())).translate_vocabulary(&words, &lang).await?
+        } else if s.uses_openrouter() {
+            let key = s.openrouter_key().context("ia:not_ready")?;
+            sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()))
+                .translate_vocabulary(&words, &lang)
+                .await?
         } else {
             let llm = self.local_llm().await?;
             let lang = lang.clone();
@@ -368,6 +377,11 @@ impl Engine {
             let client = sentences::LlmClient::new(key, Some(s.model.clone()));
             return Ok(client.generate(&req).await?);
         }
+        if s.uses_openrouter() {
+            let key = s.openrouter_key().context("Configure a chave do OpenRouter nas configurações")?;
+            let client = sentences::OpenRouterClient::new(key, Some(s.openrouter_model.clone()));
+            return Ok(client.generate(&req).await?);
+        }
         let llm = self.local_llm().await?;
         tokio::task::spawn_blocking(move || llm.generate(&req)).await?
     }
@@ -402,6 +416,15 @@ impl Engine {
             .or_else(|| self.settings().api_key())
             .context("Digite a chave da API do Claude")?;
         Ok(sentences::LlmClient::new(key, None).check().await?)
+    }
+
+    /// Checks an OpenRouter key (the one typed, or the saved one when empty).
+    pub async fn test_openrouter(&self, key: &str) -> Result<()> {
+        let key = Some(key.trim().to_string())
+            .filter(|k| !k.is_empty())
+            .or_else(|| self.settings().openrouter_key())
+            .context("Digite a chave do OpenRouter")?;
+        Ok(sentences::OpenRouterClient::new(key, None).check().await?)
     }
 
     /// What "Instalar o recomendado" downloads here: sentences, dictionary,

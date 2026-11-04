@@ -185,6 +185,7 @@
             <div class="seg" data-name="llm_provider">
               <button type="button" data-v="local" data-icon="cpu">Local</button>
               <button type="button" data-v="claude" data-icon="cloud">Claude</button>
+              <button type="button" data-v="openrouter" data-icon="cloud">OpenRouter</button>
               <button type="button" data-v="off">Desligada</button>
             </div>
             <input type="hidden" name="llm_provider" id="llmProvider">
@@ -201,6 +202,17 @@
                 <span id="claudeResult" class="hint"></span>
               </div>
               <label>Modelo <input name="model"></label>
+            </div>
+            <div id="openrouterBox">
+              <p class="hint">Online. O OpenRouter dá acesso a vários modelos (alguns gratuitos) com uma chave só.</p>
+              <label>Chave do OpenRouter <input name="openrouter_api_key" type="password" placeholder="vazio = usa OPENROUTER_API_KEY"></label>
+              <div class="row">
+                <button type="button" id="openrouterTest" class="secondary" data-icon="refresh">Testar</button>
+                <a href="https://openrouter.ai/settings/keys" target="_blank">Criar uma chave</a>
+                <span id="openrouterResult" class="hint"></span>
+              </div>
+              <label>Modelo <input name="openrouter_model" placeholder="openrouter/auto"></label>
+              <p class="hint">Qualquer id de <a href="https://openrouter.ai/models" target="_blank">openrouter.ai/models</a>. <code>openrouter/auto</code> escolhe sozinho; o modelo precisa aceitar respostas em JSON.</p>
             </div>
             <details class="adv">
               <summary>Avançado</summary>
