@@ -182,14 +182,21 @@ export async function openQuickSetup(item) {
     return;
   }
   const size = (id) => rec.items.find((i) => i.id === id)?.bytes ?? 0;
+  // The AI may just be off (or set to Claude) with the model already on disk.
+  const modelDone = rec.items.find((i) => i.id === 'model')?.done;
   const bar = '<div class="quick-progress hidden"><progress max="1" value="0"></progress><small class="hint"></small></div>';
   const body = {
     ia: () => `
       <p>A IA gera frases quando o corpus tem poucas e traduz o vocabulário.</p>
       ${getLoaded().llm_provider === 'off' ? '<p class="hint">A IA está desligada; escolher uma opção abaixo liga de novo.</p>' : ''}
       <div class="quick-opt">
-        <div><strong>Baixar ${escapeHtml(rec.model_name)}</strong><small>Roda neste aparelho, offline. ${gb(size('model'))}.</small></div>
-        <button type="button" data-q="model">Baixar</button>
+        ${
+          modelDone
+            ? `<div><strong>Usar ${escapeHtml(rec.model_name)}</strong><small>Já está baixado neste aparelho; roda offline.</small></div>
+        <button type="button" data-q="model">Usar</button>`
+            : `<div><strong>Baixar ${escapeHtml(rec.model_name)}</strong><small>Roda neste aparelho, offline. ${gb(size('model'))}.</small></div>
+        <button type="button" data-q="model">Baixar</button>`
+        }
       </div>
       ${bar}
       <div class="quick-opt col">
@@ -248,7 +255,7 @@ async function quickAction(btn) {
   await busy(btn, async () => {
     if (act === 'model')
       await withQuickProgress('model-progress', async () => {
-        await invoke('download_model', { id: rec.model_id });
+        if (!rec.items.find((i) => i.id === 'model')?.done) await invoke('download_model', { id: rec.model_id });
         await saveSettingsNow({ llm_provider: 'local', local_model: rec.model_id });
         renderModels().catch(() => {});
       });

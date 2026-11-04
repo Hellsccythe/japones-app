@@ -265,12 +265,7 @@ impl Engine {
     pub fn vocabulary(&self, text: &str) -> Result<Vec<VocabEntry>> {
         let tokens = self.analyzer.analyze(text)?;
         let dict = self.dict.lock().unwrap();
-        let lookup = |base: &str| {
-            let entry = dict.first(base).ok().flatten()?;
-            let sense = entry.senses.first()?;
-            let gloss = sense.glosses.iter().take(3).cloned().collect::<Vec<_>>().join("; ");
-            Some(gloss).filter(|g| !g.is_empty())
-        };
+        let lookup = |base: &str, class| vocab::pick_gloss(&dict.lookup(base).ok()?, class);
         Ok(vocab::vocabulary(&tokens, lookup, |s| self.analyzer.to_kana(s).ok()))
     }
 
