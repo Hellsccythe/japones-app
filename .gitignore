@@ -28,3 +28,6 @@ node_modules/
 
 # Plan execution scratch (superpowers)
 .superpowers/
+
+# Visual C++ runtime copied by app/build.rs; ships in the installer only.
+app/vcredist/

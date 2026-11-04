@@ -15,6 +15,8 @@ Interface nova (v2).
 - **Barra de seleção** no rodapé: deck, **Exportar ▾** (Anki, `.apkg`, PDF) e **Adicionar ao deck**.
 - **Anki**: **Testar conexão** e mensagens claras ("O Anki não está aberto", "Falta o add-on AnkiConnect") com o passo a passo e a opção de salvar `.apkg`.
 - **Primeiros passos**: **Instalar o recomendado** (frases, dicionário, voz e o modelo de IA certo para a memória do aparelho) com uma barra só, pausar e continuar; ou **Usar o Claude** com teste da chave. Quando falta algo (IA, voz, frases), abre uma **configuração rápida** daquele item.
+- **Instalador do Windows** agora leva o runtime do Visual C++: o app abre em um Windows que não tem o Redistributable.
+- **Downloads** continuam sozinhos quando a conexão cai; se ela não voltar, uma mensagem clara explica que o que já baixou está salvo.
 - **Estudar** e **Texto** com as cores por classe e a fonte do japonês; botões de resposta nas cores de estado.
 
 ## [0.1.0]
