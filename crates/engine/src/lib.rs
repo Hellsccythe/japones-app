@@ -5,6 +5,7 @@
 //! and can run as Tauri commands.
 
 mod settings;
+mod vocab;
 
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
@@ -12,10 +13,11 @@ use std::sync::{Arc, Mutex, RwLock};
 use anyhow::{bail, Context, Result};
 use local_llm::LocalLlm;
 use tts::embedded::EmbeddedTts;
-use jp_core::{Analyzer, Segment};
+use jp_core::{Analyzer, Segment, Token};
 use serde::{Deserialize, Serialize};
 
 pub use settings::{PosColors, Settings};
+pub use vocab::VocabEntry;
 pub use sentences::{Example, Source};
 
 /// An example sentence plus everything the UI needs to show it.
@@ -25,6 +27,8 @@ pub struct ExampleView {
     pub example: Example,
     pub segments: Vec<Segment>,
     pub html: String,
+    /// Morphemes with word class, so the UI can color the sentence.
+    pub tokens: Vec<Token>,
     /// False when an LLM sentence doesn't actually contain the word
     /// (per morphological analysis). Shown as a warning, not dropped.
     pub contains_word: bool,
@@ -247,11 +251,31 @@ impl Engine {
         })
     }
 
+    /// Morphemes of `text` with furigana and word class.
+    pub fn analyze(&self, text: &str) -> Result<Vec<Token>> {
+        Ok(self.analyzer.analyze(text)?)
+    }
+
+    /// Word-by-word vocabulary of a sentence, with JMdict meanings in English
+    /// (up to 3 glosses of the first sense; empty when the word isn't there).
+    pub fn vocabulary(&self, text: &str) -> Result<Vec<VocabEntry>> {
+        let tokens = self.analyzer.analyze(text)?;
+        let dict = self.dict.lock().unwrap();
+        let lookup = |base: &str| {
+            let entry = dict.first(base).ok().flatten()?;
+            let sense = entry.senses.first()?;
+            let gloss = sense.glosses.iter().take(3).cloned().collect::<Vec<_>>().join("; ");
+            Some(gloss).filter(|g| !g.is_empty())
+        };
+        Ok(vocab::vocabulary(&tokens, lookup, |s| self.analyzer.to_kana(s).ok()))
+    }
+
     fn view(&self, example: Example, lemmas: &[String]) -> Result<ExampleView> {
         let segments = self.analyzer.furigana(&example.japanese)?;
         Ok(ExampleView {
             contains_word: sentences::contains_word(&self.analyzer, &example.japanese, lemmas)?,
             html: jp_core::render_html(&segments),
+            tokens: self.analyzer.analyze(&example.japanese)?,
             segments,
             example,
         })

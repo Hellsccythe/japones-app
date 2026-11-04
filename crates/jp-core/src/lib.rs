@@ -31,6 +31,43 @@ pub struct Morph {
     pub reading: Option<String>,
     /// Coarse part of speech (動詞, 名詞, ...).
     pub pos: String,
+    /// First IPADIC subcategory (e.g. 形容動詞語幹 for na-adjective stems).
+    pub pos_detail: String,
+}
+
+/// Word class used to color a sentence, derived from the IPADIC part of speech.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
+#[serde(rename_all = "lowercase")]
+pub enum WordClass {
+    Noun,
+    Verb,
+    Particle,
+    Adjective,
+    Auxiliary,
+    Other,
+}
+
+/// Maps an IPADIC part of speech (column 0) and subcategory (column 1) to a [`WordClass`].
+pub fn word_class(pos: &str, pos_detail: &str) -> WordClass {
+    match pos {
+        "名詞" if pos_detail == "形容動詞語幹" => WordClass::Adjective,
+        "名詞" => WordClass::Noun,
+        "動詞" => WordClass::Verb,
+        "助詞" => WordClass::Particle,
+        "形容詞" | "副詞" | "連体詞" => WordClass::Adjective,
+        "助動詞" => WordClass::Auxiliary,
+        _ => WordClass::Other,
+    }
+}
+
+/// One morpheme with its furigana and word class, for the UI.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct Token {
+    pub surface: String,
+    pub base: String,
+    pub reading: Option<String>,
+    pub segments: Vec<Segment>,
+    pub class: WordClass,
 }
 
 /// Wraps a lindera segmenter. Loading the dictionary is the expensive part,
@@ -41,6 +78,7 @@ pub struct Analyzer {
 
 // IPADIC detail columns.
 const POS: usize = 0;
+const POS_DETAIL: usize = 1;
 const BASE_FORM: usize = 6;
 const READING: usize = 7;
 
@@ -74,6 +112,7 @@ impl Analyzer {
                     base: field(BASE_FORM).unwrap_or_else(|| surface.clone()),
                     reading: field(READING).map(|r| r.to_hiragana()),
                     pos: field(POS).unwrap_or_default(),
+                    pos_detail: field(POS_DETAIL).unwrap_or_default(),
                     surface,
                 }
             })
@@ -90,15 +129,26 @@ impl Analyzer {
             .collect())
     }
 
+    /// One token per morpheme, each with its own furigana and word class.
+    pub fn analyze(&self, text: &str) -> Result<Vec<Token>> {
+        Ok(self
+            .morphs(text)?
+            .into_iter()
+            .map(|m| Token {
+                segments: morph_segments(&m),
+                class: word_class(&m.pos, &m.pos_detail),
+                surface: m.surface,
+                base: m.base,
+                reading: m.reading,
+            })
+            .collect())
+    }
+
     /// Splits `text` into segments, attaching hiragana readings to kanji runs.
     pub fn furigana(&self, text: &str) -> Result<Vec<Segment>> {
         let mut out: Vec<Segment> = Vec::new();
         for m in self.morphs(text)? {
-            let segs = match &m.reading {
-                Some(r) if has_kanji(&m.surface) => align(&m.surface, r),
-                _ => vec![Segment::plain(&m.surface)],
-            };
-            for s in segs {
+            for s in morph_segments(&m) {
                 // Merge neighbouring plain text to keep output compact.
                 match (out.last_mut(), &s.reading) {
                     (Some(last), None) if last.reading.is_none() => last.text.push_str(&s.text),
@@ -129,6 +179,14 @@ impl Analyzer {
     }
 }
 
+/// Furigana of a single morpheme (readings only on kanji runs).
+fn morph_segments(m: &Morph) -> Vec<Segment> {
+    match &m.reading {
+        Some(r) if has_kanji(&m.surface) => align(&m.surface, r),
+        _ => vec![Segment::plain(&m.surface)],
+    }
+}
+
 pub use furigana::{render_anki, render_html};
 
 #[cfg(test)]
@@ -150,5 +208,36 @@ mod tests {
             a.to_html("学校に行く").unwrap(),
             "<ruby>学校<rt>がっこう</rt></ruby>に<ruby>行<rt>い</rt></ruby>く"
         );
+    }
+
+    #[test]
+    fn classes_of_a_sentence() {
+        let a = Analyzer::new().unwrap();
+        let t = a.analyze("日本には見学するところが色々あります。").unwrap();
+        let class = |s: &str| t.iter().find(|x| x.surface == s).unwrap().class;
+        assert_eq!(class("日本"), WordClass::Noun);
+        assert_eq!(class("に"), WordClass::Particle);
+        assert_eq!(class("する"), WordClass::Verb);
+        assert_eq!(class("ます"), WordClass::Auxiliary);
+        assert_eq!(class("色々"), WordClass::Adjective);
+        assert_eq!(class("。"), WordClass::Other);
+    }
+
+    #[test]
+    fn na_adjective_stem_is_adjective() {
+        assert_eq!(word_class("名詞", "形容動詞語幹"), WordClass::Adjective);
+    }
+
+    #[test]
+    fn token_segments_carry_furigana() {
+        let t = Analyzer::new().unwrap().analyze("見学").unwrap();
+        assert_eq!(t[0].segments[0].reading.as_deref(), Some("けんがく"));
+    }
+
+    #[test]
+    fn empty_and_punctuation_only() {
+        let a = Analyzer::new().unwrap();
+        assert!(a.analyze("").unwrap().is_empty());
+        assert!(a.analyze("。").unwrap().iter().all(|t| t.class == WordClass::Other));
     }
 }

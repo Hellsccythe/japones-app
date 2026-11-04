@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use base64::Engine as _;
-use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, Settings, Status, StudyView, VoiceStatus, WordInfo};
-use jp_core::Segment;
+use engine::{CardInput, Engine, ExampleView, ImportReport, ModelView, Settings, Status, StudyView, VocabEntry, VoiceStatus, WordInfo};
+use jp_core::{Segment, Token};
 use serde::Serialize;
 use tauri::{Emitter, Manager, State};
 use tauri_plugin_fs::{FilePath, FsExt, OpenOptions};
@@ -38,6 +38,16 @@ fn save_settings(engine: State<'_, Engine>, settings: Settings) -> CmdResult<()>
 fn furigana(engine: State<'_, Engine>, text: String) -> CmdResult<Furigana> {
     let segments = engine.furigana(&text).map_err(err)?;
     Ok(Furigana { html: jp_core::render_html(&segments), segments })
+}
+
+#[tauri::command]
+fn analyze(engine: State<'_, Engine>, text: String) -> CmdResult<Vec<Token>> {
+    engine.analyze(&text).map_err(err)
+}
+
+#[tauri::command]
+fn vocabulary(engine: State<'_, Engine>, text: String) -> CmdResult<Vec<VocabEntry>> {
+    engine.vocabulary(&text).map_err(err)
 }
 
 #[tauri::command]
@@ -330,6 +340,8 @@ pub fn run() {
             get_settings,
             save_settings,
             furigana,
+            analyze,
+            vocabulary,
             word_info,
             corpus_examples,
             generated_examples,
