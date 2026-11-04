@@ -1,9 +1,10 @@
-// "Configurações" tab: settings form, AI models, voices and data import.
+// "Configurações" tab: settings sections, AI models, voices and data import.
 
 import { $, invoke, listen, dialog, toast, busy, escapeHtml, gb } from './api.js';
 import { refreshStatus } from './status.js';
 import { applyTheme } from './theme.js';
 import { applyColors } from './colors.js';
+import { ankiMessage } from './anki.js';
 
 const form = () => $('#settings');
 /** Last settings from the backend; saving starts from these so fields without inputs keep their values. */
@@ -21,7 +22,7 @@ export async function loadSettings() {
   const s = await invoke('get_settings');
   loaded = s;
   applyAppearance(s);
-  await Promise.all([renderModels(), renderVoices()]);
+  await Promise.all([renderModels(), renderVoices(), renderData()]);
   for (const [k, v] of Object.entries(s)) {
     const el = form().elements[k];
     if (!el || el instanceof RadioNodeList) continue;
@@ -29,6 +30,7 @@ export async function loadSettings() {
     if (el.type === 'checkbox') el.checked = v;
     else el.value = Array.isArray(v) ? v.join(', ') : v;
   }
+  syncSegs();
   showProvider();
   showBackend();
   loadSpeakers().catch(() => {});
@@ -41,11 +43,88 @@ export async function saveSettingsNow(fields) {
   refreshStatus();
 }
 
+// ---------- sections ----------
+/** Shows one settings section; on the phone it opens as its own screen. */
+export function openSection(id) {
+  const tab = document.querySelector('[data-tab=config]');
+  if (!tab.classList.contains('active')) tab.click();
+  showSection(id);
+  $('.cfg').classList.add('open');
+}
+
+function showSection(id) {
+  document.querySelectorAll('.cfg-nav [data-sec]').forEach((b) => b.classList.toggle('on', b.dataset.sec === id));
+  document.querySelectorAll('.cfg-sec').forEach((sec) => sec.classList.toggle('active', sec.dataset.sec === id));
+}
+
+/** Segmented controls mirror the hidden input of the same name. */
+function syncSegs() {
+  document.querySelectorAll('.seg[data-name]').forEach((seg) => {
+    const v = String(form().elements[seg.dataset.name].value);
+    seg.querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  });
+}
+
+function collect() {
+  const f = form().elements;
+  return {
+    ...loaded,
+    theme: f.theme.value,
+    pos_colors_on: f.pos_colors_on.checked,
+    jp_font_size: f.jp_font_size.value,
+    examples_count: Number(f.examples_count.value) || 5,
+    fill_with_llm: f.fill_with_llm.checked,
+    llm_provider: f.llm_provider.value,
+    local_model: f.local_model?.value || loaded.local_model,
+    llm_threads: Number(f.llm_threads.value) || 0,
+    tts_backend: f.tts_backend.value,
+    voice_terms_accepted: f.voice_terms_accepted?.checked ?? loaded.voice_terms_accepted,
+    anthropic_api_key: f.anthropic_api_key.value,
+    model: f.model.value,
+    level: f.level.value,
+    translation_language_name: f.translation_language_name.value,
+    translation_langs: f.translation_langs.value.split(',').map((x) => x.trim()).filter(Boolean),
+    voicevox_url: f.voicevox_url.value,
+    speaker: Number(f.speaker.value),
+    speed: Number(f.speed.value),
+    anki_connect_url: f.anki_connect_url.value,
+    deck: f.deck.value,
+  };
+}
+
+let saveTimer;
+/** Every change is saved shortly after; appearance applies at once. */
+function autosave() {
+  const settings = collect();
+  applyAppearance(settings);
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    try {
+      await invoke('save_settings', { settings });
+      loaded = settings;
+      refreshStatus();
+    } catch (e) {
+      toast(String(e), true);
+    }
+  }, 400);
+}
+
+/** State tags next to the corpus and the dictionary. */
+async function renderData() {
+  const s = await invoke('status');
+  const tag = (el, ok, text) => {
+    el.textContent = text;
+    el.className = 'tag ' + (ok ? 'ok' : 'muted');
+  };
+  tag($('#tatoebaState'), s.tatoeba_indexed, s.tatoeba_indexed ? `${s.tatoeba_indexed.toLocaleString('pt-BR')} frases` : 'não baixado');
+  tag($('#dictState'), s.dictionary_loaded, s.dictionary_loaded ? 'baixado' : 'não baixado');
+}
+
 // ---------- IA ----------
 function showProvider() {
-  const local = form().elements.llm_provider.value === 'local';
-  $('#localBox').classList.toggle('hidden', !local);
-  $('#claudeBox').classList.toggle('hidden', local);
+  const p = form().elements.llm_provider.value;
+  $('#localBox').classList.toggle('hidden', p !== 'local');
+  $('#claudeBox').classList.toggle('hidden', p !== 'claude');
 }
 
 /** Model ids with a download running in this window. */
@@ -134,7 +213,23 @@ async function renderVoices() {
 }
 
 export function init() {
+  document.querySelectorAll('.cfg-nav [data-sec]').forEach((b) => b.addEventListener('click', () => openSection(b.dataset.sec)));
+  document.querySelectorAll('.cfg-sec .back').forEach((b) => b.addEventListener('click', () => $('.cfg').classList.remove('open')));
+  showSection('aparencia');
+
+  document.querySelectorAll('.seg[data-name]').forEach((seg) =>
+    seg.addEventListener('click', (e) => {
+      const b = e.target.closest('button[data-v]');
+      if (!b) return;
+      const input = form().elements[seg.dataset.name];
+      input.value = b.dataset.v;
+      syncSegs();
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }),
+  );
   $('#llmProvider').addEventListener('change', showProvider);
+  form().addEventListener('change', autosave);
+  form().addEventListener('submit', (e) => e.preventDefault());
 
   $('#models').addEventListener('change', (e) => {
     if (e.target.name === 'local_model') {
@@ -171,51 +266,10 @@ export function init() {
     if (state) state.textContent = `${gb(p.done)} de ${gb(p.total)} (${Math.floor((p.done * 100) / p.total)}%)`;
   });
 
-  form().addEventListener('submit', (e) => {
-    e.preventDefault();
-    busy(e.submitter, async () => {
-      const f = form().elements;
-      const settings = {
-        ...loaded,
-        theme: f.theme.value,
-        pos_colors_on: f.pos_colors_on.checked,
-        jp_font_size: f.jp_font_size.value,
-        llm_provider: f.llm_provider.value,
-        local_model: f.local_model?.value || loaded.local_model,
-        llm_threads: Number(f.llm_threads.value) || 0,
-        tts_backend: f.tts_backend.value,
-        voice_terms_accepted: f.voice_terms_accepted?.checked ?? loaded.voice_terms_accepted,
-        anthropic_api_key: f.anthropic_api_key.value,
-        model: f.model.value,
-        level: f.level.value,
-        translation_language_name: f.translation_language_name.value,
-        translation_langs: f.translation_langs.value.split(',').map((x) => x.trim()).filter(Boolean),
-        voicevox_url: f.voicevox_url.value,
-        speaker: Number(f.speaker.value),
-        speed: Number(f.speed.value),
-        anki_connect_url: f.anki_connect_url.value,
-        deck: f.deck.value,
-      };
-      await invoke('save_settings', { settings });
-      loaded = settings;
-      applyAppearance(settings);
-      toast('Configurações salvas.');
-      refreshStatus();
-    });
-  });
-
-  // Appearance applies as soon as it changes; "Salvar" persists it.
-  for (const name of ['theme', 'pos_colors_on', 'jp_font_size']) {
-    form().elements[name].addEventListener('change', () => {
-      const f = form().elements;
-      applyAppearance({ ...loaded, theme: f.theme.value, pos_colors_on: f.pos_colors_on.checked, jp_font_size: f.jp_font_size.value });
-    });
-  }
-
   $('#loadSpeakers').addEventListener('click', (e) =>
     busy(e.currentTarget, async () => {
       const n = await loadSpeakers();
-      toast(`${n} vozes na lista. Salve para aplicar.`);
+      toast(`${n} vozes na lista.`);
     }),
   );
 
@@ -268,26 +322,57 @@ export function init() {
 
   const log = $('#importLog');
   listen('import-log', (e) => {
-    log.classList.remove('hidden');
+    $('#importLogBox').classList.remove('hidden');
     log.textContent += e.payload + '\n';
     log.scrollTop = log.scrollHeight;
   });
 
+  /** Runs a download with an indeterminate bar; the text log stays under "ver detalhes". */
+  const importing = (btn, fn) =>
+    busy(btn, async () => {
+      $('#importProgress').classList.remove('hidden');
+      try {
+        await fn();
+      } finally {
+        $('#importProgress').classList.add('hidden');
+        renderData().catch(() => {});
+        refreshStatus();
+      }
+    });
+
   $('#importTatoeba').addEventListener('click', (e) =>
-    busy(e.currentTarget, async () => {
+    importing(e.currentTarget, async () => {
       log.textContent = '';
       await invoke('import_tatoeba');
       toast('Tatoeba importado.');
-      refreshStatus();
     }),
   );
 
   $('#importDict').addEventListener('click', (e) =>
-    busy(e.currentTarget, async () => {
+    importing(e.currentTarget, async () => {
       const n = await invoke('import_dictionary');
       toast(`${n.toLocaleString('pt-BR')} entradas do JMdict importadas.`);
-      refreshStatus();
     }),
+  );
+
+  $('#ankiTest').addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      const out = $('#ankiResult');
+      // Test the URL in the field, even before the autosave lands.
+      loaded = collect();
+      await invoke('save_settings', { settings: loaded });
+      try {
+        const v = await invoke('anki_test');
+        out.textContent = `Conectado (AnkiConnect v${v})`;
+        out.className = 'hint ok';
+      } catch (err) {
+        out.textContent = ankiMessage(err).text;
+        out.className = 'hint bad';
+      }
+    }),
+  );
+  $('#copyAnkiCode').addEventListener('click', () =>
+    navigator.clipboard.writeText($('#ankiCode').textContent).then(() => toast('Código copiado.')),
   );
 
   $('#openLicenses').addEventListener('click', () => {

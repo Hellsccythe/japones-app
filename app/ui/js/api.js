@@ -10,12 +10,23 @@ export const $ = (s) => document.querySelector(s);
 export const isAndroid = /Android/i.test(navigator.userAgent);
 
 let toastTimer;
-export function toast(msg, isError = false) {
+/** `actions`: buttons shown after the text, `[{ label, run }]`; clicking one closes the toast. */
+export function toast(msg, isError = false, actions = []) {
   const t = $('#toast');
   t.textContent = msg;
+  for (const a of actions) {
+    const b = document.createElement('button');
+    b.className = 'secondary';
+    b.textContent = a.label;
+    b.addEventListener('click', () => {
+      t.classList.add('hidden');
+      a.run();
+    });
+    t.append(b);
+  }
   t.className = 'toast' + (isError ? ' error' : '');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.add('hidden'), isError ? 7000 : 3500);
+  toastTimer = setTimeout(() => t.classList.add('hidden'), actions.length ? 12000 : isError ? 7000 : 3500);
 }
 
 /** Runs `fn` with the button disabled; shows errors as a toast. */

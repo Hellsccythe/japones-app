@@ -545,10 +545,18 @@ impl Engine {
 
     /// Sends cards to a running Anki. Returns how many were added.
     pub async fn export_anki_connect(&self, inputs: &[CardInput], with_audio: bool) -> Result<usize> {
-        let cards = self.build_cards(inputs, with_audio).await?;
         let s = self.settings();
         let client = anki::AnkiConnect::new(Some(s.anki_connect_url.clone()));
+        // Fail before generating audio, which is the slow part.
+        client.check().await?;
+        let cards = self.build_cards(inputs, with_audio).await?;
         Ok(client.add_cards(&s.deck, &cards, &tags()).await?)
+    }
+
+    /// Checks the AnkiConnect connection. Returns the add-on version.
+    pub async fn anki_test(&self) -> Result<u32> {
+        let client = anki::AnkiConnect::new(Some(self.settings().anki_connect_url.clone()));
+        Ok(client.check().await?)
     }
 
     // ---- study (decks inside the app) ----
@@ -697,6 +705,18 @@ fn now_secs() -> i64 {
         .unwrap_or_default()
 }
 
+/// Error text for the UI: AnkiConnect failures become a code the UI turns
+/// into a friendly message (`anki:not_running`, `anki:no_addon`,
+/// `anki:incompatible:<v>`); anything else is its plain message.
+pub fn error_text(e: &anyhow::Error) -> String {
+    match e.downcast_ref::<anki::Error>() {
+        Some(anki::Error::NotRunning) => "anki:not_running".into(),
+        Some(anki::Error::NoAddon) => "anki:no_addon".into(),
+        Some(anki::Error::Incompatible(v)) => format!("anki:incompatible:{v}"),
+        _ => e.to_string(),
+    }
+}
+
 fn anki_kind(state: srs::State) -> anki::CardKind {
     match state {
         srs::State::New => anki::CardKind::New,
@@ -726,5 +746,18 @@ fn anki_schedule(n: &srs::ExportedNote) -> anki::Schedule {
                 took_ms: r.took_ms,
             })
             .collect(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn anki_errors_become_codes() {
+        assert_eq!(error_text(&anki::Error::NotRunning.into()), "anki:not_running");
+        assert_eq!(error_text(&anki::Error::NoAddon.into()), "anki:no_addon");
+        assert_eq!(error_text(&anki::Error::Incompatible(5).into()), "anki:incompatible:5");
+        assert_eq!(error_text(&anyhow::anyhow!("outro")), "outro");
     }
 }

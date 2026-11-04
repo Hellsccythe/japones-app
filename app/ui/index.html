@@ -7,16 +7,15 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header>
-    <h1>日本語 <span>Japonês App</span></h1>
-    <nav>
-      <button class="tab active" data-tab="frases">Frases</button>
-      <button class="tab" data-tab="estudar">Estudar</button>
-      <button class="tab" data-tab="texto">Texto</button>
-      <button class="tab" data-tab="config">Configurações</button>
-    </nav>
-    <div id="status" class="status"></div>
-  </header>
+  <nav class="sidebar" aria-label="Abas">
+    <div class="logo jp" aria-hidden="true">日本</div>
+    <button class="tab active" data-tab="frases" data-icon="search"><span>Frases</span></button>
+    <button class="tab" data-tab="estudar" data-icon="book"><span>Estudar</span></button>
+    <button class="tab" data-tab="texto" data-icon="file"><span>Texto</span></button>
+    <span class="grow"></span>
+    <button id="statusDot" class="status-dot" title="" aria-label="Estado"><i></i></button>
+    <button class="tab" data-tab="config" data-icon="sliders"><span>Ajustes</span></button>
+  </nav>
 
   <main>
     <!-- Frases -->
@@ -65,11 +64,7 @@
         <div class="row">
           <button id="newDeck" class="secondary">Novo deck</button>
           <button id="importApkg" class="secondary">Importar .apkg</button>
-          <span class="grow"></span>
-          <button id="backupStudy" class="secondary">Fazer backup</button>
-          <button id="restoreStudy" class="secondary">Restaurar backup</button>
         </div>
-        <p class="hint">O backup guarda todos os decks e o histórico de revisões num arquivo. Restaure no celular ou em outro PC para continuar de onde parou.</p>
         <form id="deckEdit" class="settings hidden">
           <fieldset>
             <legend>Deck</legend>
@@ -136,111 +131,198 @@
 
     <!-- Configurações -->
     <section id="tab-config" class="panel">
-      <form id="settings" class="settings">
-        <button type="button" id="openSetup" class="link">Primeiros passos (o que baixar)</button>
-        <fieldset id="appearanceBox">
-          <legend>Aparência</legend>
-          <label>Tema
-            <select name="theme">
-              <option value="system">Igual ao sistema</option>
-              <option value="light">Claro</option>
-              <option value="dark">Escuro</option>
-            </select>
-          </label>
-          <label class="inline"><input type="checkbox" name="pos_colors_on"> Cores por classe de palavra</label>
-          <label>Tamanho do japonês
-            <select name="jp_font_size">
-              <option value="small">Pequeno</option>
-              <option value="medium">Médio</option>
-              <option value="large">Grande</option>
-            </select>
-          </label>
-        </fieldset>
-        <fieldset id="iaBox">
-          <legend>IA (geração de frases)</legend>
-          <label>Usar
-            <select name="llm_provider" id="llmProvider">
-              <option value="local">IA local (offline, roda neste aparelho)</option>
-              <option value="claude">Claude (online, precisa de chave da API)</option>
-            </select>
-          </label>
-          <div id="localBox">
-            <p class="hint">Escolha um modelo e baixe uma vez. Os arquivos ficam no aparelho e o download continua de onde parou.</p>
-            <ul id="models" class="models"></ul>
-            <label>Threads de CPU <input name="llm_threads" type="number" min="0" max="64" title="0 = automático"></label>
-          </div>
-          <div id="claudeBox">
-            <label>Chave da API <input name="anthropic_api_key" type="password" placeholder="vazio = usa ANTHROPIC_API_KEY"></label>
-            <label>Modelo <input name="model"></label>
-          </div>
-          <label>Nível JLPT
-            <select name="level"><option value="">Qualquer</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select>
-          </label>
-          <label>Idioma das traduções/notas <input name="translation_language_name"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Corpus Tatoeba</legend>
-          <label>Idiomas de tradução (ISO 639-3, por preferência) <input name="translation_langs" placeholder="por, eng"></label>
-          <div class="row">
-            <button type="button" id="importTatoeba" class="secondary">Baixar e indexar Tatoeba</button>
-            <button type="button" id="importDict" class="secondary">Baixar dicionário (JMdict)</button>
-          </div>
-          <pre id="importLog" class="log hidden"></pre>
-        </fieldset>
-        <fieldset id="audioBox">
-          <legend>Áudio (VOICEVOX)</legend>
-          <label>Usar
-            <select name="tts_backend" id="ttsBackend">
-              <option value="embedded">Voz embutida (offline, não precisa abrir nada)</option>
-              <option value="http" class="desktop-only">Programa VOICEVOX aberto no PC (HTTP)</option>
-            </select>
-          </label>
-          <div id="embeddedBox">
-            <div id="voiceTerms" class="terms">
-              <p>As vozes usam o VOICEVOX CORE, o ONNX Runtime da VOICEVOX e os modelos de voz VOICEVOX. Pelos termos:</p>
-              <ul>
-                <li>uso comercial e não comercial permitido, e o app pode embuti-los;</li>
-                <li>é proibido fazer engenharia reversa dos modelos e do ONNX Runtime;</li>
-                <li>ao publicar um áudio, dê o crédito da voz (ex.: <code>VOICEVOX:ずんだもん</code>). O app coloca o crédito nos cards automaticamente;</li>
-                <li>algumas vozes têm restrições extras, mostradas em “Créditos”.</li>
-              </ul>
-              <p><a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">Termos dos modelos de voz</a> ·
-                 <a href="https://github.com/VOICEVOX/onnxruntime-builder" target="_blank">ONNX Runtime da VOICEVOX</a></p>
-              <label class="inline"><input type="checkbox" name="voice_terms_accepted" id="voiceTermsAccepted"> Li e aceito os termos</label>
+      <div class="cfg">
+        <nav class="cfg-nav" aria-label="Seções">
+          <h2>Configurações</h2>
+          <button type="button" data-sec="aparencia" data-icon="palette"><span>Aparência</span></button>
+          <button type="button" data-sec="ia" data-icon="cpu"><span>IA</span><i class="dot"></i></button>
+          <button type="button" data-sec="frases" data-icon="book"><span>Frases e dicionário</span><i class="dot"></i></button>
+          <button type="button" data-sec="voz" data-icon="volume"><span>Voz</span><i class="dot"></i></button>
+          <button type="button" data-sec="anki" data-icon="archive"><span>Anki</span></button>
+          <button type="button" data-sec="backup" data-icon="database"><span>Backup</span></button>
+          <button type="button" data-sec="sobre" data-icon="info"><span>Sobre</span></button>
+        </nav>
+
+        <form id="settings" class="settings cfg-body">
+          <section class="cfg-sec" data-sec="aparencia">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Aparência</h2>
+            <div class="field">
+              <span>Tema</span>
+              <div class="seg" data-name="theme">
+                <button type="button" data-v="system">Sistema</button>
+                <button type="button" data-v="light" data-icon="sun">Claro</button>
+                <button type="button" data-v="dark" data-icon="moon">Escuro</button>
+              </div>
+              <input type="hidden" name="theme">
             </div>
-            <p class="hint">Cada pacote tem uma ou mais vozes (~60 MB). Na primeira vez também são baixados o ONNX Runtime e o dicionário (~29 MB).</p>
-            <ul id="voicePacks" class="models"></ul>
-            <details id="creditsBox" class="credits">
-              <summary>Créditos das vozes baixadas</summary>
-              <ul id="credits"></ul>
+            <label class="sw-row">
+              <span>Cores por classe de palavra<small>Substantivos, verbos, partículas… cada um com uma cor. Clique na legenda das frases para trocar as cores.</small></span>
+              <span class="switch"><input type="checkbox" name="pos_colors_on"><span></span></span>
+            </label>
+            <div class="field">
+              <span>Tamanho do japonês</span>
+              <div class="seg" data-name="jp_font_size">
+                <button type="button" data-v="small">P</button>
+                <button type="button" data-v="medium">M</button>
+                <button type="button" data-v="large">G</button>
+              </div>
+              <input type="hidden" name="jp_font_size">
+            </div>
+          </section>
+
+          <section class="cfg-sec" data-sec="ia">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>IA</h2>
+            <p class="hint">Gera frases novas quando o corpus tem poucas e traduz o vocabulário.</p>
+            <div class="seg" data-name="llm_provider">
+              <button type="button" data-v="local" data-icon="cpu">Local</button>
+              <button type="button" data-v="claude" data-icon="cloud">Claude</button>
+              <button type="button" data-v="off">Desligada</button>
+            </div>
+            <input type="hidden" name="llm_provider" id="llmProvider">
+            <div id="localBox">
+              <p class="hint">Roda neste aparelho, offline. Escolha um modelo e baixe uma vez; o download continua de onde parou.</p>
+              <ul id="models" class="models"></ul>
+            </div>
+            <div id="claudeBox">
+              <p class="hint">Online, precisa de uma chave da API da Anthropic.</p>
+              <label>Chave da API <input name="anthropic_api_key" type="password" placeholder="vazio = usa ANTHROPIC_API_KEY"></label>
+              <label>Modelo <input name="model"></label>
+            </div>
+            <details class="adv">
+              <summary>Avançado</summary>
+              <label>Threads de CPU <input name="llm_threads" type="number" min="0" max="64" title="0 = automático"></label>
+              <label>Nível JLPT
+                <select name="level"><option value="">Qualquer</option><option>N5</option><option>N4</option><option>N3</option><option>N2</option><option>N1</option></select>
+              </label>
+              <label>Idioma das traduções e notas <input name="translation_language_name"></label>
             </details>
-          </div>
-          <label id="voicevoxUrlBox">URL do VOICEVOX <input name="voicevox_url"></label>
-          <label>Voz <select name="speaker" id="speakerSelect"></select></label>
-          <button type="button" id="loadSpeakers" class="link">Atualizar lista de vozes</button>
-          <label>Velocidade <input name="speed" type="number" step="0.05" min="0.5" max="2"></label>
-        </fieldset>
-        <fieldset>
-          <legend>Anki</legend>
-          <label class="desktop-only">URL do AnkiConnect <input name="anki_connect_url"></label>
-          <label>Deck <input name="deck"></label>
-        </fieldset>
-        <button type="submit">Salvar configurações</button>
-        <fieldset id="aboutBox" class="about">
-          <legend>Sobre</legend>
-          <p><strong>Japonês App</strong> <span id="appVersion"></span></p>
-          <ul>
-            <li>Frases: <a href="https://tatoeba.org" target="_blank">Tatoeba</a>, CC BY 2.0 FR. Cada frase guarda o seu número no Tatoeba.</li>
-            <li>Dicionário: <a href="https://www.edrdg.org/jmdict/j_jmdict.html" target="_blank">JMdict</a> © EDRDG, CC BY-SA 4.0, via <a href="https://github.com/scriptin/jmdict-simplified" target="_blank">jmdict-simplified</a>.</li>
-            <li>Leituras e furigana: dicionário IPADIC (lindera), licença do IPADIC/NAIST.</li>
-            <li>Vozes: VOICEVOX CORE (MIT), ONNX Runtime da VOICEVOX e modelos de voz VOICEVOX, cada um com seus termos. O crédito de cada voz baixada está em Áudio › Créditos.</li>
-            <li>IA local: modelos Gemma 4 do Google (Apache-2.0), rodando com llama.cpp (MIT).</li>
-            <li>Revisão espaçada: <a href="https://github.com/open-spaced-repetition/fsrs-rs" target="_blank">FSRS</a> (BSD-3-Clause).</li>
-            <li>PDF: Typst (Apache-2.0) e a fonte Noto Serif JP (SIL OFL 1.1).</li>
-          </ul>
-          <button type="button" id="openLicenses" class="secondary">Licenças de software</button>
-        </fieldset>
-      </form>
+          </section>
+
+          <section class="cfg-sec" data-sec="frases">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Frases e dicionário</h2>
+            <div class="field">
+              <span>Frases por busca</span>
+              <div class="seg" data-name="examples_count">
+                <button type="button" data-v="3">3</button>
+                <button type="button" data-v="5">5</button>
+                <button type="button" data-v="10">10</button>
+              </div>
+              <input type="hidden" name="examples_count">
+            </div>
+            <label class="sw-row">
+              <span>Completar com IA<small>Quando o corpus tiver poucas frases para a palavra.</small></span>
+              <span class="switch"><input type="checkbox" name="fill_with_llm"><span></span></span>
+            </label>
+            <label>Idiomas de tradução (ISO 639-3, por preferência) <input name="translation_langs" placeholder="por, eng"></label>
+            <div class="item">
+              <div><strong>Frases do Tatoeba</strong> <span id="tatoebaState" class="tag muted"></span><small>Frases reais com tradução. ~36 MB.</small></div>
+              <button type="button" id="importTatoeba" class="secondary" data-icon="download">Baixar</button>
+            </div>
+            <div class="item">
+              <div><strong>Dicionário JMdict</strong> <span id="dictState" class="tag muted"></span><small>Significado e leitura da palavra buscada. ~12 MB.</small></div>
+              <button type="button" id="importDict" class="secondary" data-icon="download">Baixar</button>
+            </div>
+            <progress id="importProgress" class="hidden"></progress>
+            <details id="importLogBox" class="adv hidden">
+              <summary>ver detalhes</summary>
+              <pre id="importLog" class="log"></pre>
+            </details>
+          </section>
+
+          <section class="cfg-sec" data-sec="voz" id="audioBox">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Voz</h2>
+            <label>Usar
+              <select name="tts_backend" id="ttsBackend">
+                <option value="embedded">Voz embutida (offline, não precisa abrir nada)</option>
+                <option value="http" class="desktop-only">Programa VOICEVOX aberto no PC (HTTP)</option>
+              </select>
+            </label>
+            <div id="embeddedBox">
+              <div id="voiceTerms" class="terms">
+                <p>As vozes VOICEVOX são livres para uso comercial e não comercial. Ao publicar um áudio, dê o crédito da voz (o app já põe nos cards).</p>
+                <details>
+                  <summary>ler termos</summary>
+                  <ul>
+                    <li>uso comercial e não comercial permitido, e o app pode embuti-los;</li>
+                    <li>é proibido fazer engenharia reversa dos modelos e do ONNX Runtime;</li>
+                    <li>ao publicar um áudio, dê o crédito da voz (ex.: <code>VOICEVOX:ずんだもん</code>);</li>
+                    <li>algumas vozes têm restrições extras, mostradas em “Créditos”.</li>
+                  </ul>
+                  <p><a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">Termos dos modelos de voz</a> ·
+                     <a href="https://github.com/VOICEVOX/onnxruntime-builder" target="_blank">ONNX Runtime da VOICEVOX</a></p>
+                </details>
+                <label class="sw-row">
+                  <span>Li e aceito os termos</span>
+                  <span class="switch"><input type="checkbox" name="voice_terms_accepted" id="voiceTermsAccepted"><span></span></span>
+                </label>
+              </div>
+              <p class="hint">Cada pacote tem uma ou mais vozes (~60 MB). Na primeira vez também são baixados o ONNX Runtime e o dicionário (~29 MB).</p>
+              <ul id="voicePacks" class="models"></ul>
+              <details id="creditsBox" class="credits">
+                <summary>Créditos das vozes baixadas</summary>
+                <ul id="credits"></ul>
+              </details>
+            </div>
+            <label id="voicevoxUrlBox">URL do VOICEVOX <input name="voicevox_url"></label>
+            <label>Voz <select name="speaker" id="speakerSelect"></select></label>
+            <button type="button" id="loadSpeakers" class="link" data-icon="refresh">Atualizar lista de vozes</button>
+            <label>Velocidade <input name="speed" type="number" step="0.05" min="0.5" max="2"></label>
+          </section>
+
+          <section class="cfg-sec" data-sec="anki">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Anki</h2>
+            <label>Deck padrão <input name="deck"></label>
+            <div class="desktop-only">
+              <label>URL do AnkiConnect <input name="anki_connect_url"></label>
+              <div class="row">
+                <button type="button" id="ankiTest" class="secondary" data-icon="refresh">Testar conexão</button>
+                <span id="ankiResult" class="hint"></span>
+              </div>
+              <ol class="how">
+                <li>Instale o <a href="https://apps.ankiweb.net" target="_blank">Anki</a> no PC.</li>
+                <li>No Anki, abra <strong>Ferramentas › Complementos › Obter complementos</strong> e cole o código
+                  <code id="ankiCode">2055492159</code> <button type="button" id="copyAnkiCode" class="btn-icon" data-icon="copy" title="Copiar código"></button></li>
+                <li>Reinicie o Anki e deixe-o aberto ao enviar os cards.</li>
+              </ol>
+            </div>
+            <p class="hint android-only">No celular, use “Salvar .apkg” e abra o arquivo no AnkiDroid.</p>
+          </section>
+
+          <section class="cfg-sec" data-sec="backup">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Backup</h2>
+            <p class="hint">O backup guarda todos os decks e o histórico de revisões num arquivo. Restaure no celular ou em outro PC para continuar de onde parou.</p>
+            <div class="row">
+              <button type="button" id="backupStudy" class="secondary" data-icon="upload">Fazer backup</button>
+              <button type="button" id="restoreStudy" class="secondary" data-icon="download">Restaurar backup</button>
+            </div>
+          </section>
+
+          <section class="cfg-sec about" data-sec="sobre" id="aboutBox">
+            <button type="button" class="link back" data-icon="chevron-left">Configurações</button>
+            <h2>Sobre</h2>
+            <p><strong>Japonês App</strong> <span id="appVersion"></span></p>
+            <ul>
+              <li>Frases: <a href="https://tatoeba.org" target="_blank">Tatoeba</a>, CC BY 2.0 FR. Cada frase guarda o seu número no Tatoeba.</li>
+              <li>Dicionário: <a href="https://www.edrdg.org/jmdict/j_jmdict.html" target="_blank">JMdict</a> © EDRDG, CC BY-SA 4.0, via <a href="https://github.com/scriptin/jmdict-simplified" target="_blank">jmdict-simplified</a>.</li>
+              <li>Leituras e furigana: dicionário IPADIC (lindera), licença do IPADIC/NAIST.</li>
+              <li>Vozes: VOICEVOX CORE (MIT), ONNX Runtime da VOICEVOX e modelos de voz VOICEVOX, cada um com seus termos. O crédito de cada voz baixada está em Voz › Créditos.</li>
+              <li>IA local: modelos Gemma 4 do Google (Apache-2.0), rodando com llama.cpp (MIT).</li>
+              <li>Revisão espaçada: <a href="https://github.com/open-spaced-repetition/fsrs-rs" target="_blank">FSRS</a> (BSD-3-Clause).</li>
+              <li>PDF: Typst (Apache-2.0) e a fonte Noto Serif JP (SIL OFL 1.1).</li>
+            </ul>
+            <div class="row">
+              <button type="button" id="openSetup" class="secondary">Primeiros passos</button>
+              <button type="button" id="openLicenses" class="secondary">Licenças de software</button>
+            </div>
+          </section>
+        </form>
+      </div>
     </section>
   </main>
 

@@ -74,12 +74,27 @@ a { color: var(--accent); }
 .w-auxiliary { color: var(--pos-auxiliary); }
 .no-pos .w { color: inherit; }
 
-/* ---------- header (replaced by the side navigation later) ---------- */
-header { display: flex; align-items: center; gap: 24px; padding: 10px 20px; border-bottom: 1px solid var(--border); background: var(--sidebar); position: sticky; top: 0; z-index: 2; }
-header h1 { font-family: var(--jp); font-size: 20px; margin: 0; color: var(--accent); font-weight: 500; }
-header h1 span { font-family: var(--ui); font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 6px; }
-nav { display: flex; gap: 4px; }
-.status { margin-left: auto; color: var(--muted); font-size: 12px; text-align: right; }
+/* ---------- navigation: sidebar on the PC, bottom bar on the phone ---------- */
+:root { --nav-w: 76px; --nav-h: 62px; }
+.sidebar {
+  position: fixed; top: 0; bottom: 0; left: 0; width: var(--nav-w); z-index: 5;
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px;
+  background: var(--sidebar); border-right: 1px solid var(--border);
+}
+.sidebar .logo { font-size: 22px; color: var(--accent); margin-bottom: 14px; }
+.sidebar .tab {
+  flex-direction: column; gap: 4px; width: 60px; height: 56px; padding: 0;
+  background: none; border: none; border-radius: 12px; color: var(--muted); font-size: 11px; font-weight: 500;
+}
+.sidebar .tab .ic { width: 20px; height: 20px; }
+.sidebar .tab:hover:not(:disabled) { color: var(--text); background: var(--surface-2); filter: none; }
+.sidebar .tab.active { color: var(--accent); background: var(--accent-soft); }
+.status-dot { background: none; border: none; width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+.status-dot:hover:not(:disabled) { background: var(--surface-2); filter: none; }
+.status-dot i { width: 10px; height: 10px; border-radius: 50%; background: var(--faint); }
+.status-dot.ok i { background: var(--ok); }
+.status-dot.warn i { background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 20%, transparent); }
+.status-dot.bad i { background: var(--bad); box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 22%, transparent); }
 
 /* ---------- buttons ---------- */
 button {
@@ -141,7 +156,7 @@ label.inline { display: inline-flex; align-items: center; gap: 8px; color: var(-
 .tag.ok { background: color-mix(in srgb, var(--ok) 14%, transparent); color: var(--ok); }
 
 /* ---------- layout ---------- */
-main { padding: 20px; }
+main { padding: 24px 28px; margin-left: var(--nav-w); }
 .panel { display: none; }
 .panel.active { display: block; }
 .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 10px 0; }
@@ -194,13 +209,45 @@ ruby rt { font-size: .5em; color: var(--muted); }
 .text-out p { margin: 0 0 .6em; display: flex; gap: 8px; align-items: baseline; }
 .text-out p button { flex: none; font-family: var(--ui); }
 
-.settings { max-width: 640px; display: flex; flex-direction: column; gap: 14px; }
+/* ---------- settings: section list + one section ---------- */
+.cfg { display: grid; grid-template-columns: 220px minmax(0, 680px); gap: 24px; align-items: start; }
+.cfg-nav { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 24px; }
+.cfg-nav h2 { font-size: 18px; font-weight: 600; margin: 0 0 12px 10px; }
+.cfg-nav button { justify-content: flex-start; gap: 10px; background: none; border: none; color: var(--muted); padding: 9px 10px; border-radius: 10px; font-weight: 500; }
+.cfg-nav button:hover:not(:disabled) { color: var(--text); background: var(--surface-2); filter: none; }
+.cfg-nav button.on { color: var(--text); background: var(--surface-2); }
+.cfg-nav button.on .ic { color: var(--accent); }
+.cfg-nav .dot { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); margin-left: auto; }
+.cfg-nav .dot.on { display: block; }
+.cfg-sec { display: none; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+.cfg-sec.active { display: flex; }
+.cfg-sec h2 { font-size: 17px; font-weight: 600; margin: 0; }
+.cfg-sec .back { display: none; align-self: start; }
+.field { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.field > span { font-weight: 500; }
+.sw-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; }
+.sw-row > span:first-child { display: flex; flex-direction: column; gap: 2px; font-weight: 500; }
+.sw-row small, .item small { color: var(--muted); font-weight: 400; font-size: 12px; display: block; }
+.item { display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.item > div { flex: 1; }
+.adv summary { cursor: pointer; color: var(--muted); }
+.adv[open] { display: flex; flex-direction: column; gap: 10px; }
+.cfg-sec progress { width: 100%; height: 6px; accent-color: var(--accent); }
+.how { margin: 6px 0 0; padding-left: 20px; line-height: 1.9; color: var(--muted); }
+.how strong { color: var(--text); font-weight: 500; }
+.how code { background: var(--surface-2); padding: 2px 8px; border-radius: 6px; color: var(--text); }
+.how .btn-icon { width: 28px; height: 28px; vertical-align: middle; }
+.hint.ok { color: var(--ok); }
+.hint.bad { color: var(--bad); }
+.android-only { display: none; }
+.android .android-only { display: block; }
+.settings { display: flex; flex-direction: column; gap: 14px; }
 fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); margin: 0; }
 legend { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; }
-.settings label:not(.inline):not(.switch) { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; }
+.settings label:not(.inline):not(.switch):not(.sw-row) { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; }
 .log { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; max-height: 180px; overflow: auto; font-size: 12px; margin: 0; white-space: pre-wrap; }
 
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--surface-3); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 18px; border-radius: 10px; max-width: 80vw; z-index: 30; }
+.toast { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: fixed; bottom: 20px; left: calc(50% + var(--nav-w) / 2); transform: translateX(-50%); background: var(--surface-3); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow); padding: 10px 18px; border-radius: 10px; max-width: 80vw; z-index: 30; }
 .toast.error { background: color-mix(in srgb, var(--bad) 22%, var(--surface)); border-color: color-mix(in srgb, var(--bad) 50%, transparent); }
 .empty { color: var(--muted); padding: 20px 0; }
 
@@ -285,17 +332,27 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
 .sheet iframe { flex: 1; width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm); background: #fff; }
 .about ul { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; }
 .about p { margin: 0; }
-.about button { align-self: start; }
 
 /* ---------- phone ---------- */
 @media (max-width: 600px) {
   body { font-size: 15px; }
-  header { flex-wrap: wrap; gap: 4px 12px; padding: calc(8px + env(safe-area-inset-top)) 12px 0; }
-  header h1 span { display: none; }
-  nav { order: 3; width: 100%; overflow-x: auto; scrollbar-width: none; }
-  nav .tab { flex: 1; padding: 10px 6px; white-space: nowrap; }
-  .status { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60vw; }
-  main { padding: 12px 12px calc(12px + env(safe-area-inset-bottom)); }
+  .sidebar {
+    top: auto; right: 0; width: auto; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    flex-direction: row; justify-content: space-around; padding: 4px 6px env(safe-area-inset-bottom);
+    border-right: none; border-top: 1px solid var(--border);
+  }
+  .sidebar .logo, .sidebar .grow { display: none; }
+  .sidebar .tab { flex: 1; max-width: 90px; height: 52px; }
+  .status-dot { order: 9; width: 36px; height: 52px; }
+  main { margin-left: 0; padding: calc(12px + env(safe-area-inset-top)) 12px calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); }
+  .toast { left: 50%; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); }
+  .cfg { grid-template-columns: 1fr; }
+  .cfg-nav { position: static; }
+  .cfg-nav button { padding: 13px 10px; }
+  .cfg:not(.open) .cfg-body { display: none; }
+  .cfg.open .cfg-nav { display: none; }
+  .cfg-sec { padding: 14px; }
+  .cfg-sec .back { display: inline-flex; }
   button { min-height: 40px; }
   button.link, button.icon, .selected li button, .decks .gear { min-height: 0; }
   .search #word { flex-basis: 100%; min-width: 0; }
@@ -311,11 +368,12 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
   .study { gap: 10px; padding-bottom: 84px; }
   .card { padding: 20px 14px; min-height: 45vh; }
   .card .sentence { font-size: calc(var(--jp-size) + 1px); }
-  .answer-row { position: fixed; left: 0; right: 0; bottom: 0; z-index: 3; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+  .answer-row { position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 3; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
   .answer-row button { min-height: 60px; font-size: 16px; }
   #showAnswer { flex: 1; }
   kbd { display: none; }
 }
 /* Android's WebView draws under the gesture bar but reports no safe-area inset. */
-.android .answer-row { padding-bottom: max(28px, env(safe-area-inset-bottom)); }
-.android .study { padding-bottom: 104px; }
+.android .sidebar { height: calc(var(--nav-h) + 24px); padding-bottom: 24px; }
+.android .answer-row { bottom: calc(var(--nav-h) + 24px); }
+.android main { padding-bottom: calc(var(--nav-h) + 40px); }

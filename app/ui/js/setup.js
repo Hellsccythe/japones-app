@@ -2,7 +2,7 @@
 
 import { $, invoke, listen, toast, busy, gb } from './api.js';
 import { refreshStatus } from './status.js';
-import { getLoaded, saveSettingsNow } from './config.js';
+import { getLoaded, saveSettingsNow, openSection } from './config.js';
 
 async function renderSetup() {
   const s = await invoke('status');
@@ -20,8 +20,7 @@ export function openSetup() {
 /** Leaves the checklist for a settings section. */
 function goToSettings(section) {
   closeSetup();
-  document.querySelector('[data-tab=config]').click();
-  $(section).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  openSection(section);
 }
 
 function closeSetup() {
@@ -51,8 +50,8 @@ export function init() {
         await renderSetup();
         refreshStatus();
       });
-    else if (act === 'voice') goToSettings('#audioBox');
-    else if (act === 'llm') goToSettings('#iaBox');
+    else if (act === 'voice') goToSettings('voz');
+    else if (act === 'llm') goToSettings('ia');
   });
   $('#setupClose').addEventListener('click', closeSetup);
   $('#openSetup').addEventListener('click', openSetup);

@@ -141,7 +141,12 @@ fn copy_to(app: &tauri::AppHandle, from: &Path, to: &FilePath) -> anyhow::Result
 
 #[tauri::command]
 async fn export_anki_connect(engine: State<'_, Engine>, cards: Vec<CardInput>, with_audio: bool) -> CmdResult<usize> {
-    engine.export_anki_connect(&cards, with_audio).await.map_err(err)
+    engine.export_anki_connect(&cards, with_audio).await.map_err(|e| engine::error_text(&e))
+}
+
+#[tauri::command]
+async fn anki_test(engine: State<'_, Engine>) -> CmdResult<u32> {
+    engine.anki_test().await.map_err(|e| engine::error_text(&e))
 }
 
 #[tauri::command]
@@ -331,6 +336,7 @@ pub fn run() {
             speak,
             speakers,
             export_anki_connect,
+            anki_test,
             export_apkg,
             export_pdf,
             export_text_pdf,

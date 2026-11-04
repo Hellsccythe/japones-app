@@ -1,7 +1,8 @@
 // "Frases" tab: search, example sentences, selection and export.
 
 import { $, invoke, dialog, toast, busy, escapeHtml, play } from './api.js';
-import { getLoaded } from './config.js';
+import { getLoaded, openSection } from './config.js';
+import { ankiMessage } from './anki.js';
 import { renderDecks } from './estudar.js';
 
 /** Selected cards, keyed by sentence so the same one isn't added twice. */
@@ -164,8 +165,19 @@ export function init() {
     const c = cards();
     if (!c) return;
     busy(e.target, async () => {
-      const n = await invoke('export_anki_connect', { cards: c, withAudio: $('#withAudio').checked });
-      toast(`${n} de ${c.length} cards adicionados ao Anki${n < c.length ? ' (os outros já existiam)' : ''}.`);
+      try {
+        const n = await invoke('export_anki_connect', { cards: c, withAudio: $('#withAudio').checked });
+        toast(`${n} de ${c.length} cards adicionados ao Anki${n < c.length ? ' (os outros já existiam)' : ''}.`);
+      } catch (err) {
+        const m = ankiMessage(err);
+        const actions = m.help
+          ? [
+              { label: 'Ver como instalar', run: () => openSection('anki') },
+              { label: 'Salvar .apkg', run: () => $('#toApkg').click() },
+            ]
+          : [];
+        toast(m.text, true, actions);
+      }
     });
   });
 

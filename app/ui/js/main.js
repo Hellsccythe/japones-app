@@ -1,6 +1,7 @@
 // Entry point: tabs, external links and start-up.
 
 import { $, toast, isAndroid } from './api.js';
+import { icon } from './icons.js';
 import { refreshStatus } from './status.js';
 import * as frases from './frases.js';
 import * as estudar from './estudar.js';
@@ -9,6 +10,9 @@ import * as config from './config.js';
 import * as setup from './setup.js';
 
 document.documentElement.classList.toggle('android', isAndroid);
+
+// Icons named in the markup (data-icon) go in front of the label.
+document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));
 
 document.querySelectorAll('.tab').forEach((b) =>
   b.addEventListener('click', () => {
@@ -27,11 +31,17 @@ document.addEventListener('click', (e) => {
 
 for (const m of [frases, estudar, texto, config, setup]) m.init();
 
+$('#statusDot').addEventListener('click', (e) => config.openSection(e.currentTarget.dataset.section || 'sobre'));
+
 config
   .loadSettings()
   .catch((e) => toast(String(e), true))
   .then(() => {
     estudar.renderDecks();
+    // The search starts from the defaults chosen in Frases e dicionário.
+    const s = config.getLoaded();
+    $('#count').value = s.examples_count || 5;
+    $('#autoLlm').checked = s.fill_with_llm ?? true;
     if (!config.getLoaded().setup_done) setup.openSetup();
   });
 refreshStatus();
