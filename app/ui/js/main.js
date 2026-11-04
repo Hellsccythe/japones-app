@@ -38,10 +38,6 @@ config
   .catch((e) => toast(String(e), true))
   .then(() => {
     estudar.renderDecks();
-    // The search starts from the defaults chosen in Frases e dicionário.
-    const s = config.getLoaded();
-    $('#count').value = s.examples_count || 5;
-    $('#autoLlm').checked = s.fill_with_llm ?? true;
     if (!config.getLoaded().setup_done) setup.openSetup();
   });
 refreshStatus();

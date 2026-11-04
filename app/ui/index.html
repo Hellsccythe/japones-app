@@ -20,37 +20,38 @@
   <main>
     <!-- Frases -->
     <section id="tab-frases" class="panel active">
-      <div class="layout">
-        <div class="col-main">
-          <form id="search" class="search">
-            <input id="word" placeholder="Palavra em japonês (ex.: 食べる)" autocomplete="off" required>
-            <input id="count" type="number" min="1" max="30" value="5" title="Quantidade">
-            <button type="submit">Buscar no corpus</button>
-            <button type="button" id="generate" class="secondary">Gerar com IA</button>
-          </form>
-          <label class="inline"><input type="checkbox" id="autoLlm" checked> Completar com IA quando o corpus tiver poucas frases</label>
+      <div class="frases">
+        <form id="search" class="search">
+          <label class="search-box">
+            <span class="search-ic" data-icon="search"></span>
+            <input id="word" placeholder="Palavra em japonês (ex.: 食べる)" autocomplete="off" required aria-label="Palavra em japonês">
+          </label>
+          <button type="button" id="generate" class="ghost" data-icon="sparkles">Gerar com IA</button>
+          <button type="submit">Buscar</button>
+        </form>
 
-          <div id="wordInfo" class="word-info hidden"></div>
-          <div id="examples" class="examples"></div>
-        </div>
+        <div id="wordInfo" class="word-info hidden"></div>
+        <div id="examples" class="examples"></div>
+      </div>
 
-        <aside class="col-side">
-          <h2>Selecionadas <span id="selCount" class="badge">0</span></h2>
-          <ul id="selected" class="selected"></ul>
-          <div class="export">
-            <div class="add-deck">
-              <input id="deckName" list="deckNames" placeholder="Deck (ex.: Japonês::Verbos)">
-              <datalist id="deckNames"></datalist>
-              <button id="toDeck">Adicionar ao deck</button>
-            </div>
-            <label class="inline"><input type="checkbox" id="withAudio"> Incluir áudio (VOICEVOX)</label>
-            <button id="toAnki" class="desktop-only">Enviar ao Anki</button>
-            <button id="toApkg" class="secondary">Salvar .apkg</button>
-            <label class="inline"><input type="checkbox" id="pdfFurigana" checked> Furigana no PDF</label>
-            <button id="toPdf" class="secondary">Salvar PDF</button>
-            <button id="clearSel" class="link">Limpar seleção</button>
+      <div id="selBar" class="sel-bar hidden" role="region" aria-label="Frases selecionadas">
+        <span class="sel-count"><strong id="selCount">0</strong> <span id="selLabel">selecionadas</span></span>
+        <input id="deckName" list="deckNames" placeholder="Deck (ex.: Japonês::Verbos)" aria-label="Deck de destino">
+        <datalist id="deckNames"></datalist>
+        <div class="menu-wrap">
+          <button type="button" id="exportBtn" class="ghost" aria-haspopup="menu" aria-expanded="false">Exportar <span data-icon="chevron-down"></span></button>
+          <div id="exportMenu" class="menu hidden" role="menu">
+            <button type="button" id="toAnki" class="desktop-only" role="menuitem" data-icon="archive">Enviar ao Anki</button>
+            <button type="button" id="toApkg" role="menuitem" data-icon="download">Salvar .apkg</button>
+            <button type="button" id="toPdf" role="menuitem" data-icon="file">Salvar PDF</button>
+            <hr>
+            <label class="sw-row"><span>Incluir áudio</span><span class="switch"><input type="checkbox" id="withAudio"><span></span></span></label>
+            <label class="sw-row"><span>Furigana no PDF</span><span class="switch"><input type="checkbox" id="pdfFurigana" checked><span></span></span></label>
+            <hr>
+            <button type="button" id="clearSel" role="menuitem" data-icon="x">Limpar seleção</button>
           </div>
-        </aside>
+        </div>
+        <button type="button" id="toDeck" data-icon="plus">Adicionar ao deck</button>
       </div>
     </section>
 

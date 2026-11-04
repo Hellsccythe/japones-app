@@ -43,9 +43,7 @@ export async function busy(btn, fn) {
   }
 }
 
-export function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-}
+export { escapeHtml } from './render.js';
 
 export const gb = (bytes) => (bytes / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' GB';
 
