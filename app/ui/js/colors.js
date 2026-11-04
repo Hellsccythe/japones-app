@@ -17,6 +17,29 @@ export const DEFAULT_COLORS = {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
+const EXTRA_COLORS = { dark: ['#E0B050', '#F08080', '#A0A0FF'], light: ['#A86F0C', '#C0392B', '#5B4BC4'] };
+
+/** The 8 colors offered in the picker: the theme's 5 defaults plus 3 extras. */
+export function suggestedColors(theme) {
+  return [...CLASSES.map((c) => DEFAULT_COLORS[theme][c]), ...EXTRA_COLORS[theme]];
+}
+
+const copyColors = (saved) => ({ light: { ...(saved?.light ?? {}) }, dark: { ...(saved?.dark ?? {}) } });
+
+/** New saved colors with `theme`/`cls` set to `color` (invalid input changes nothing). */
+export function withColor(saved, theme, cls, color) {
+  const next = copyColors(saved);
+  if (CLASSES.includes(cls) && HEX.test(color ?? '') && next[theme]) next[theme][cls] = color.toUpperCase();
+  return next;
+}
+
+/** New saved colors with `theme`/`cls` back to the default. */
+export function withoutColor(saved, theme, cls) {
+  const next = copyColors(saved);
+  delete next[theme]?.[cls];
+  return next;
+}
+
 /** Saved colors completed with the defaults; invalid or unknown entries are dropped. */
 export function normalizeColors(saved) {
   const out = {};

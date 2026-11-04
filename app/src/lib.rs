@@ -51,6 +51,11 @@ fn vocabulary(engine: State<'_, Engine>, text: String) -> CmdResult<Vec<VocabEnt
 }
 
 #[tauri::command]
+async fn translate_vocabulary(engine: State<'_, Engine>, entries: Vec<VocabEntry>) -> CmdResult<Vec<VocabEntry>> {
+    engine.translate_vocabulary(entries).await.map_err(err)
+}
+
+#[tauri::command]
 fn word_info(engine: State<'_, Engine>, word: String) -> CmdResult<WordInfo> {
     engine.word_info(&word).map_err(err)
 }
@@ -342,6 +347,7 @@ pub fn run() {
             furigana,
             analyze,
             vocabulary,
+            translate_vocabulary,
             word_info,
             corpus_examples,
             generated_examples,

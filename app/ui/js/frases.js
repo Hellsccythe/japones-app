@@ -1,11 +1,13 @@
 // "Frases" tab: search, sentence cards with the vocabulary breakdown, selection bar and export.
 
 import { $, invoke, dialog, toast, busy, escapeHtml, play } from './api.js';
-import { getLoaded, openSection } from './config.js';
+import { getLoaded, openSection, colorStore } from './config.js';
 import { ankiMessage } from './anki.js';
 import { renderDecks } from './estudar.js';
 import { icon } from './icons.js';
 import { tokensHtml, vocabHtml, legendHtml, copyText } from './render.js';
+import { openPalette } from './palette.js';
+import { needsAiSetup } from './ia.js';
 
 /** Selected cards, keyed by sentence so the same one isn't added twice. */
 const selected = new Map();
@@ -81,6 +83,7 @@ function renderVocab(el, ex) {
     <div class="vocab-head">
       <strong>Vocabulário</strong>
       <span class="grow"></span>
+      <button type="button" class="pill translate" title="Traduzir os significados para ${escapeHtml(getLoaded().translation_language_name || 'o seu idioma')}">${icon('sparkles', 16)}<span>Traduzir com IA</span></button>
       <button type="button" class="pill copy" title="Copiar a frase e o vocabulário">${icon('copy', 16)}<span>Copiar</span></button>
     </div>
     <div class="v-grid">${vocabHtml(ex.vocab)}</div>
@@ -111,6 +114,26 @@ function copyVocab(btn) {
     .writeText(copyText(ex.japanese, ex.translation, ex.vocab))
     .then(() => toast('Copiado.'))
     .catch((e) => toast(String(e), true));
+}
+
+/** Swaps the English meanings for AI translations (cached by the backend). */
+function translateVocab(btn) {
+  const el = btn.closest('.ex');
+  const ex = exampleAt(el);
+  return busy(btn, async () => {
+    try {
+      ex.vocab = await invoke('translate_vocabulary', { entries: ex.vocab });
+      renderVocab(el, ex);
+    } catch (err) {
+      if (needsAiSetup(err)) aiSetup();
+      else toast('IA: ' + err, true);
+    }
+  });
+}
+
+/** The AI is off or not configured: take the user to where it's set up. */
+function aiSetup() {
+  openSection('ia');
 }
 
 function togglePick(btn) {
@@ -205,6 +228,8 @@ export function init() {
     if (btn.classList.contains('details')) return toggleDetails(btn);
     if (btn.classList.contains('pick')) return togglePick(btn);
     if (btn.classList.contains('copy')) return copyVocab(btn);
+    if (btn.classList.contains('translate')) return translateVocab(btn);
+    if (btn.dataset.class) return openPalette(btn, btn.dataset.class, colorStore);
   });
 
   // Keep edited translations in sync with the selection.

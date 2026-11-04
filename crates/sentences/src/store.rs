@@ -1,8 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 use jp_core::Analyzer;
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 
 use crate::{contains_word, word_lemmas, Example, Result, Source};
 
@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS sentences (id INTEGER PRIMARY KEY, lang TEXT NOT NULL
 CREATE TABLE IF NOT EXISTS links (jpn_id INTEGER NOT NULL, trans_id INTEGER NOT NULL, PRIMARY KEY (jpn_id, trans_id));
 CREATE TABLE IF NOT EXISTS lemma_index (lemma TEXT NOT NULL, sentence_id INTEGER NOT NULL, PRIMARY KEY (lemma, sentence_id)) WITHOUT ROWID;
 CREATE INDEX IF NOT EXISTS sentences_lang ON sentences(lang);
+CREATE TABLE IF NOT EXISTS vocab_gloss (base TEXT NOT NULL, reading TEXT NOT NULL, lang TEXT NOT NULL, gloss TEXT NOT NULL, PRIMARY KEY (base, reading, lang)) WITHOUT ROWID;
 ";
 
 impl Store {
@@ -167,6 +168,39 @@ impl Store {
     }
 }
 
+/// Vocabulary meanings translated by the AI, keyed by `(base, reading)` and language.
+/// `reading` is "" when the word has none.
+impl Store {
+    pub fn cached_glosses(&self, keys: &[(String, String)], lang: &str) -> Result<HashMap<(String, String), String>> {
+        let mut stmt = self
+            .conn
+            .prepare_cached("SELECT gloss FROM vocab_gloss WHERE base = ?1 AND reading = ?2 AND lang = ?3")?;
+        let mut out = HashMap::new();
+        for (base, reading) in keys {
+            let gloss: Option<String> = stmt.query_row(params![base, reading, lang], |r| r.get(0)).optional()?;
+            if let Some(g) = gloss.filter(|g| !g.is_empty()) {
+                out.insert((base.clone(), reading.clone()), g);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Saves `(base, reading, gloss)` rows; empty glosses are skipped.
+    pub fn save_glosses(&mut self, rows: &[(String, String, String)], lang: &str) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        {
+            let mut stmt = tx.prepare_cached(
+                "INSERT OR REPLACE INTO vocab_gloss (base, reading, lang, gloss) VALUES (?1, ?2, ?3, ?4)",
+            )?;
+            for (base, reading, gloss) in rows.iter().filter(|(_, _, g)| !g.trim().is_empty()) {
+                stmt.execute(params![base, reading, lang, gloss.trim()])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -200,6 +234,31 @@ mod tests {
         assert_eq!(found[0].translation.as_deref(), Some("Ontem eu comi sushi."));
 
         drop(store);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn gloss_cache_roundtrip_and_skips_empty() {
+        let dir = std::env::temp_dir().join(format!("jp-gloss-test-{}", std::process::id()));
+        let mut s = Store::open(&dir.join("t.db")).unwrap();
+        s.save_glosses(
+            &[("見学".into(), "けんがく".into(), "visitar".into()), ("に".into(), String::new(), String::new())],
+            "português",
+        )
+        .unwrap();
+        let got = s
+            .cached_glosses(&[("見学".into(), "けんがく".into()), ("に".into(), String::new())], "português")
+            .unwrap();
+        assert_eq!(got.get(&("見学".into(), "けんがく".into())).map(String::as_str), Some("visitar"));
+        assert!(!got.contains_key(&("に".into(), String::new())));
+        assert!(s.cached_glosses(&[("見学".into(), "けんがく".into())], "english").unwrap().is_empty());
+
+        // Saving again replaces the old meaning.
+        s.save_glosses(&[("見学".into(), "けんがく".into(), "visita".into())], "português").unwrap();
+        let got = s.cached_glosses(&[("見学".into(), "けんがく".into())], "português").unwrap();
+        assert_eq!(got.values().next().map(String::as_str), Some("visita"));
+
+        drop(s);
         let _ = std::fs::remove_dir_all(dir);
     }
 }

@@ -4,6 +4,8 @@ import { $, invoke, listen, dialog, toast, busy, escapeHtml, gb } from './api.js
 import { refreshStatus } from './status.js';
 import { applyTheme } from './theme.js';
 import { applyColors } from './colors.js';
+import { legendHtml } from './render.js';
+import { openPalette } from './palette.js';
 import { ankiMessage } from './anki.js';
 
 const form = () => $('#settings');
@@ -42,6 +44,13 @@ export async function saveSettingsNow(fields) {
   await invoke('save_settings', { settings: loaded });
   refreshStatus();
 }
+
+/** Where the color picker reads and saves the word-class colors. */
+export const colorStore = {
+  get: () => loaded.pos_colors,
+  on: () => loaded.pos_colors_on,
+  save: (pos_colors) => saveSettingsNow({ pos_colors }),
+};
 
 // ---------- sections ----------
 /** Shows one settings section; on the phone it opens as its own screen. */
@@ -216,6 +225,12 @@ export function init() {
   document.querySelectorAll('.cfg-nav [data-sec]').forEach((b) => b.addEventListener('click', () => openSection(b.dataset.sec)));
   document.querySelectorAll('.cfg-sec .back').forEach((b) => b.addEventListener('click', () => $('.cfg').classList.remove('open')));
   showSection('aparencia');
+
+  $('#posColorRows').innerHTML = legendHtml();
+  $('#posColorRows').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-class]');
+    if (b) openPalette(b, b.dataset.class, colorStore);
+  });
 
   document.querySelectorAll('.seg[data-name]').forEach((seg) =>
     seg.addEventListener('click', (e) => {

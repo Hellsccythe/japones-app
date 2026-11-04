@@ -5,6 +5,7 @@ pub mod llm;
 pub mod prompt;
 pub mod store;
 pub mod tatoeba;
+pub mod vocab_prompt;
 
 use jp_core::Analyzer;
 use serde::{Deserialize, Serialize};

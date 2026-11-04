@@ -218,6 +218,25 @@ ruby rt { font-size: .5em; color: var(--muted); }
 .dot-auxiliary { background: var(--pos-auxiliary); }
 .no-pos .legend-item i { background: var(--text); opacity: .5; }
 
+.legend.plain { border-top: none; padding-top: 0; }
+
+/* Color picker popover. */
+.palette {
+  position: fixed; z-index: 25; width: 236px; padding: 10px 12px 8px;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow);
+}
+.palette-head { display: flex; align-items: baseline; gap: 6px; }
+.palette-head small { color: var(--muted); font-size: 12px; }
+.palette-head .btn-icon { width: 26px; height: 26px; min-height: 0; }
+.swatches { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.swatch { width: 100%; aspect-ratio: 1; height: auto; min-height: 0; padding: 0; border-radius: 50%; background: var(--c); border: 2px solid transparent; }
+.swatch:hover:not(:disabled) { filter: brightness(1.1); }
+.swatch.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--surface) inset; }
+.palette-free { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.palette-free input[type='color'] { width: 44px; height: 28px; padding: 2px; cursor: pointer; }
+.palette .reset { align-self: start; font-size: 12.5px; min-height: 0; }
+
 /* Selection bar, pinned to the bottom while something is selected. */
 .has-sel main { padding-bottom: 96px; }
 .sel-bar {

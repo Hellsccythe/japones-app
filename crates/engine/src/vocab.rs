@@ -1,5 +1,7 @@
 //! Word-by-word vocabulary of a sentence, for the sentence breakdown.
 
+use std::collections::HashMap;
+
 use jp_core::{has_kanji, Token, WordClass};
 use serde::{Deserialize, Serialize};
 
@@ -34,6 +36,47 @@ pub fn vocabulary(
         });
     }
     out
+}
+
+/// Cache key of an entry: `(base, reading)`, with "" for no reading.
+pub fn cache_key(e: &VocabEntry) -> (String, String) {
+    (e.base.clone(), e.reading.clone().unwrap_or_default())
+}
+
+/// Replaces glosses found in `cached`; returns the entries and the indexes still to translate.
+pub fn apply_cache(
+    mut entries: Vec<VocabEntry>,
+    cached: &HashMap<(String, String), String>,
+) -> (Vec<VocabEntry>, Vec<usize>) {
+    let mut missing = Vec::new();
+    for (i, e) in entries.iter_mut().enumerate() {
+        match cached.get(&cache_key(e)) {
+            Some(g) => e.gloss = g.clone(),
+            None => missing.push(i),
+        }
+    }
+    (entries, missing)
+}
+
+/// Puts `translations[i]` into `entries[missing[i]]`. Empty translations keep the
+/// original gloss and aren't returned for caching. Returns `(entries, rows to cache)`.
+pub fn merge_translations(
+    mut entries: Vec<VocabEntry>,
+    missing: &[usize],
+    translations: &[String],
+) -> (Vec<VocabEntry>, Vec<(String, String, String)>) {
+    let mut rows = Vec::new();
+    for (&i, t) in missing.iter().zip(translations) {
+        let t = t.trim();
+        let Some(e) = entries.get_mut(i) else { continue };
+        if t.is_empty() {
+            continue;
+        }
+        e.gloss = t.to_string();
+        let (base, reading) = cache_key(e);
+        rows.push((base, reading, e.gloss.clone()));
+    }
+    (entries, rows)
 }
 
 /// Punctuation, symbols and whitespace (kana and kanji count as letters).
@@ -72,6 +115,41 @@ mod tests {
         assert_eq!(v[0].reading.as_deref(), Some("けんがく"));
         assert_eq!(v[1].reading, None);
         assert_eq!(v[0].gloss, "x");
+    }
+
+    fn entry(base: &str, reading: Option<&str>, gloss: &str) -> VocabEntry {
+        VocabEntry { base: base.into(), reading: reading.map(Into::into), class: WordClass::Noun, gloss: gloss.into() }
+    }
+
+    #[test]
+    fn cached_entries_are_not_asked_again() {
+        let entries = vec![entry("見学", Some("けんがく"), "field trip"), entry("ねえ", None, "")];
+        let mut cached = std::collections::HashMap::new();
+        cached.insert(("見学".to_string(), "けんがく".to_string()), "visita".to_string());
+        let (filled, missing) = apply_cache(entries, &cached);
+        assert_eq!(filled[0].gloss, "visita");
+        assert_eq!(missing, vec![1]);
+
+        cached.insert(("ねえ".to_string(), String::new()), "ei".to_string());
+        let (_, missing) = apply_cache(filled, &cached);
+        assert!(missing.is_empty(), "everything cached: the provider isn't called");
+    }
+
+    #[test]
+    fn short_answer_keeps_the_english_and_caches_only_real_translations() {
+        let entries = vec![entry("見学", Some("けんがく"), "field trip"), entry("する", None, "to do")];
+        // The AI answered one item for two words (parse pads with "").
+        let (out, rows) = merge_translations(entries, &[0, 1], &["visitar".into(), String::new()]);
+        assert_eq!(out[0].gloss, "visitar");
+        assert_eq!(out[1].gloss, "to do");
+        assert_eq!(rows, vec![("見学".to_string(), "けんがく".to_string(), "visitar".to_string())]);
+    }
+
+    #[test]
+    fn word_without_gloss_gets_translated() {
+        let (out, rows) = merge_translations(vec![entry("ねえ", None, "")], &[0], &["ei".into()]);
+        assert_eq!(out[0].gloss, "ei");
+        assert_eq!(rows[0].1, "");
     }
 
     #[test]

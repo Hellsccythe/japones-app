@@ -270,6 +270,41 @@ impl Engine {
         Ok(vocab::vocabulary(&tokens, lookup, |s| self.analyzer.to_kana(s).ok()))
     }
 
+    /// Translates the vocabulary meanings into the configured language with the
+    /// selected AI. Cached meanings are reused; only the rest go to the AI, and
+    /// an entry it leaves untranslated keeps its original gloss.
+    /// Errors `ia:off` (AI turned off) and `ia:not_ready` (no model / no key)
+    /// let the UI open the quick AI setup.
+    pub async fn translate_vocabulary(&self, entries: Vec<VocabEntry>) -> Result<Vec<VocabEntry>> {
+        let s = self.settings();
+        if s.llm_off() {
+            bail!("ia:off");
+        }
+        if !self.llm_ready() {
+            bail!("ia:not_ready");
+        }
+        let lang = s.translation_language_name.clone();
+        let keys: Vec<_> = entries.iter().map(vocab::cache_key).collect();
+        let cached = self.store.lock().unwrap().cached_glosses(&keys, &lang)?;
+        let (entries, missing) = vocab::apply_cache(entries, &cached);
+        if missing.is_empty() {
+            return Ok(entries);
+        }
+        let words: Vec<(String, String)> =
+            missing.iter().map(|&i| (entries[i].base.clone(), entries[i].gloss.clone())).collect();
+        let translations = if s.uses_claude() {
+            let key = s.api_key().context("ia:not_ready")?;
+            sentences::LlmClient::new(key, Some(s.model.clone())).translate_vocabulary(&words, &lang).await?
+        } else {
+            let llm = self.local_llm().await?;
+            let lang = lang.clone();
+            tokio::task::spawn_blocking(move || llm.translate_vocabulary(&words, &lang)).await??
+        };
+        let (entries, rows) = vocab::merge_translations(entries, &missing, &translations);
+        self.store.lock().unwrap().save_glosses(&rows, &lang)?;
+        Ok(entries)
+    }
+
     fn view(&self, example: Example, lemmas: &[String]) -> Result<ExampleView> {
         let segments = self.analyzer.furigana(&example.japanese)?;
         Ok(ExampleView {
