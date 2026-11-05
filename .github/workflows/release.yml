@@ -1,7 +1,9 @@
-# Builds the Windows installer and the Android APK. A `v*` tag (matching the
+# Builds the Windows installer and, when the repository variable BUILD_ANDROID
+# is "true", the Android APK. A `v*` tag (matching the
 # version in app/tauri.conf.json) also publishes them as a GitHub Release, with
 # the notes from that version's section of CHANGELOG.md. Running it by hand
-# (Actions › Release › Run workflow) only builds, for testing.
+# (Actions › Release › Run workflow) or changing this file in a pull request
+# only builds, for testing.
 #
 # Android signing secrets (Settings › Secrets and variables › Actions):
 #   ANDROID_KEYSTORE_BASE64   the .jks keystore, base64-encoded
@@ -12,6 +14,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
@@ -74,6 +78,7 @@ jobs:
           if-no-files-found: error
 
   android:
+    if: vars.BUILD_ANDROID == 'true'
     needs: version
     runs-on: ubuntu-latest
     steps:
@@ -136,7 +141,10 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: github.ref_type == 'tag'
+    # A skipped Android build doesn't block the release; a failed one does.
+    if: >-
+      !cancelled() && github.ref_type == 'tag' && needs.windows.result == 'success' &&
+      (needs.android.result == 'success' || needs.android.result == 'skipped')
     needs: [version, windows, android]
     runs-on: ubuntu-latest
     steps:
@@ -156,7 +164,9 @@ jobs:
 
           ---
           **Windows:** baixe o `windows-x64-setup.exe`. Como o instalador não tem assinatura de código paga, o Windows pode mostrar "O Windows protegeu o computador": clique em *Mais informações › Executar assim mesmo*.
-          **Android:** baixe o `.apk` no celular e permita instalar de fontes desconhecidas. Funciona em aparelhos ARM 64 bits (Android 7 ou mais novo).
           Na primeira vez, o app mostra o que baixar (frases, dicionário, voz e IA) e o tamanho de cada item.
           EOF
+          if ls dist/*.apk > /dev/null 2>&1; then
+            echo '**Android:** baixe o `.apk` no celular e permita instalar de fontes desconhecidas. Funciona em aparelhos ARM 64 bits (Android 7 ou mais novo).' >> notes.md
+          fi
           gh release create "$GITHUB_REF_NAME" dist/* --title "Japonês App $VERSION" --notes-file notes.md
