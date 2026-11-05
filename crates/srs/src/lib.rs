@@ -494,8 +494,10 @@ mod tests {
         assert_eq!(card.note.sentence, "パンを食べる。");
         assert_eq!(card.intervals[0], 60);
         srs.answer(card.card_id, Rating::Good, 3000).unwrap();
-        let c = srs.counts(deck).unwrap();
-        assert_eq!((c.new, c.learning), (0, 1), "new limit used up, card now learning");
+        assert_eq!(srs.counts(deck).unwrap().new, 0, "new limit used up");
+        // Counted when it comes due: seen from now, a step that crosses 4 a.m. belongs to tomorrow.
+        let due = srs.sched(card.card_id).unwrap().due;
+        assert_eq!(srs.counts_at(&d, due).unwrap().learning, 1, "card now learning");
 
         // The 10-minute step isn't due yet but is within the learn-ahead window.
         let again = srs.next_card(deck).unwrap().unwrap();
