@@ -19,7 +19,7 @@ App em Rust (Tauri 2), para Windows e Android, para estudar japonês a partir de
 Na página de [Releases](../../releases) do GitHub:
 
 - **Windows**: `Japones-App_<versão>_windows-x64-setup.exe`. O instalador não tem assinatura de código paga, então o Windows pode avisar "O Windows protegeu o computador": clique em *Mais informações › Executar assim mesmo*.
-- **Android**: `Japones-App_<versão>_android-arm64.apk` (Android 7 ou mais novo, ARM 64 bits). Baixe no celular e permita instalar de fontes desconhecidas.
+- **Android**: a partir da versão 0.2.0, ainda sem APK nas releases; para usar agora, compile seguindo as instruções abaixo.
 
 Na primeira vez, o app mostra o que baixar (frases, dicionário, voz e IA) e o tamanho de cada item.
 
@@ -64,7 +64,7 @@ O APK de Android sai de `npm run tauri -- android build --apk --target aarch64` 
 
 ## Publicar uma versão
 
-O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera o instalador do Windows e o APK assinado e cria a release no GitHub.
+O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera o instalador do Windows e cria a release no GitHub. O APK assinado só entra quando a variável do repositório `BUILD_ANDROID` vale `true` (Settings › Secrets and variables › Actions › Variables).
 
 1. **Uma vez só, a chave de assinatura do Android.** Guarde o arquivo e a senha fora do repositório: sem eles não dá para publicar atualizações que instalem por cima.
 

@@ -3,9 +3,9 @@
 As notas de cada versão saem daqui para a página de releases do GitHub
 (a seção `## [x.y.z]` que bate com a tag `vx.y.z`).
 
-## [Não lançado]
+## [0.2.0]
 
-Interface nova (v2).
+Interface nova (v2). Esta versão sai só para Windows; o Android continua em preparação.
 
 - **Visual novo** com tema claro e escuro (ou o do sistema), ícones de linha e navegação lateral no PC / barra inferior no celular. Um indicador mostra se falta configurar algo e leva à seção certa.
 - **Configurações em seções** (Aparência, IA, Frases e dicionário, Voz, Anki, Backup e Sobre), salvas automaticamente.
