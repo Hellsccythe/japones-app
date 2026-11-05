@@ -2,7 +2,8 @@
 # is "true", the Android APK. A `v*` tag (matching the
 # version in app/tauri.conf.json) also publishes them as a GitHub Release, with
 # the notes from that version's section of CHANGELOG.md. Running it by hand
-# (Actions › Release › Run workflow) only builds, for testing.
+# (Actions › Release › Run workflow) or changing this file in a pull request
+# only builds, for testing.
 #
 # Android signing secrets (Settings › Secrets and variables › Actions):
 #   ANDROID_KEYSTORE_BASE64   the .jks keystore, base64-encoded
@@ -13,6 +14,8 @@ name: Release
 on:
   push:
     tags: ["v*"]
+  pull_request:
+    paths: [".github/workflows/release.yml"]
   workflow_dispatch:
 
 permissions:
