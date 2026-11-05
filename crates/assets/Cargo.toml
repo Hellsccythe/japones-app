@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 anyhow.workspace = true
 reqwest.workspace = true
-tokio = { workspace = true, features = ["rt"] }
+tokio = { workspace = true, features = ["rt", "time"] }
 sha2 = "0.10"
 flate2.workspace = true
 tar.workspace = true

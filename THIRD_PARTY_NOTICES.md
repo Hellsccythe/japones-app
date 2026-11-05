@@ -8,6 +8,7 @@ Ele inclui ou baixa os componentes abaixo, cada um com a sua licença.
 | Componente | Licença | Onde |
 |---|---|---|
 | Bibliotecas Rust (≈650 crates) | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, MPL-2.0 e outras permissivas | Lista completa com os textos em `app/ui/licenses.html` (no app: Configurações › Sobre › Licenças de software). Gerada com `cargo about generate app/licenses.hbs -o app/ui/licenses.html`. |
+| Runtime do Visual C++ (`msvcp140`, `msvcp140_1`, `vcruntime140`, `vcruntime140_1`, `vcomp140`) | Microsoft Software License Terms (arquivos redistribuíveis) | Só no instalador do Windows, ao lado do app; não fica no repositório |
 | llama.cpp (compilado junto, via `llama-cpp-2`) | MIT | idem |
 | VOICEVOX CORE 0.17 (via crate `voicevox_core`) | MIT | idem |
 | Dicionário mecab-ipadic 2.7.0 (embutido pelo `lindera-ipadic`) | Aviso da NAIST/ICOT, abaixo | leituras e furigana |
