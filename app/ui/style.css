@@ -75,7 +75,12 @@ a { color: var(--accent); }
 .no-pos .w { color: inherit; }
 
 /* ---------- navigation: sidebar on the PC, bottom bar on the phone ---------- */
-:root { --nav-w: 76px; --nav-h: 62px; }
+:root {
+  --nav-w: 76px; --nav-h: 62px;
+  /* Safe areas; on Android insets.js replaces them with the real ones. */
+  --sa-top: env(safe-area-inset-top, 0px); --sa-right: env(safe-area-inset-right, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px); --sa-left: env(safe-area-inset-left, 0px);
+}
 .sidebar {
   position: fixed; top: 0; bottom: 0; left: 0; width: var(--nav-w); z-index: 5;
   display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 8px;
@@ -146,7 +151,7 @@ label.inline { display: inline-flex; align-items: center; gap: 8px; color: var(-
 .switch input:focus-visible + span { box-shadow: 0 0 0 3px var(--ring); }
 
 /* Segmented control: <div class="seg"><button class="on">A</button><button>B</button></div> */
-.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg { display: inline-flex; flex-wrap: wrap; max-width: 100%; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
 .seg button { background: transparent; color: var(--muted); border: none; padding: 6px 14px; border-radius: 8px; }
 .seg button:hover:not(:disabled) { color: var(--text); filter: none; }
 .seg button.on { background: var(--surface-3); color: var(--text); }
@@ -283,7 +288,7 @@ ruby rt { font-size: .5em; color: var(--muted); }
 .cfg-nav button.on .ic { color: var(--accent); }
 .cfg-nav .dot { display: none; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); margin-left: auto; }
 .cfg-nav .dot.on { display: block; }
-.cfg-sec { display: none; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+.cfg-sec { display: none; min-width: 0; flex-direction: column; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
 .cfg-sec.active { display: flex; }
 .cfg-sec h2 { font-size: 17px; font-weight: 600; margin: 0; }
 .cfg-sec .back { display: none; align-self: start; }
@@ -305,7 +310,7 @@ ruby rt { font-size: .5em; color: var(--muted); }
 .hint.bad { color: var(--bad); }
 .android-only { display: none; }
 .android .android-only { display: block; }
-.settings { display: flex; flex-direction: column; gap: 14px; }
+.settings { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 fieldset { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; background: var(--surface); margin: 0; }
 legend { color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; padding: 0 6px; }
 .settings label:not(.inline):not(.switch):not(.sw-row) { display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 500; }
@@ -380,7 +385,8 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
 }
 
 /* ---------- overlays ---------- */
-.overlay { position: fixed; inset: 0; z-index: 20; background: rgb(0 0 0 / .5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.overlay { position: fixed; inset: 0; z-index: 20; background: rgb(0 0 0 / .5); display: flex; align-items: center; justify-content: center;
+  padding: calc(16px + var(--sa-top)) calc(16px + var(--sa-right)) calc(16px + var(--sa-bottom)) calc(16px + var(--sa-left)); }
 .sheet { background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 16px; padding: 20px; width: min(600px, 100%); max-height: 100%; overflow: auto; }
 .sheet h2 { margin: 0 0 6px; font-weight: 600; }
 .steps { list-style: none; padding: 0; margin: 12px 0; display: flex; flex-direction: column; gap: 10px; }
@@ -408,8 +414,18 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
 #setupProgress progress, .quick-progress progress { width: 100%; height: 6px; accent-color: var(--accent); }
 #setupNow .bad, .hint.bad { color: var(--bad); }
 .row.alt { margin: 4px 0; }
-.claude-box { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 6px 0; }
-.claude-box input, .quick-opt input { flex: 1; min-width: 0; }
+.ai-choice { border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin: 12px 0 8px; display: grid; gap: 6px; min-width: 0; }
+.ai-choice legend { float: left; width: 100%; font-weight: 600; padding: 0; margin-bottom: 2px; }
+.ai-choice > .hint { margin: 0 0 4px; }
+.ai-opt { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
+.ai-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.ai-opt input { margin-top: 3px; accent-color: var(--accent); }
+.ai-opt span { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.ai-opt small { color: var(--muted); }
+.ai-key { display: grid; gap: 4px; padding: 0 12px 4px 34px; }
+.ai-key [data-result]:empty { display: none; }
+@media (max-width: 600px) { .ai-key { padding: 0 0 4px; } }
+.ai-key input, .quick-opt input { flex: 1; min-width: 0; }
 .quick-opt { display: flex; align-items: center; gap: 12px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin: 8px 0; }
 .quick-opt.col { flex-direction: column; align-items: stretch; }
 .quick-opt > div:first-child { flex: 1; display: flex; flex-direction: column; gap: 2px; }
@@ -428,15 +444,15 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
 @media (max-width: 600px) {
   body { font-size: 15px; }
   .sidebar {
-    top: auto; right: 0; width: auto; height: calc(var(--nav-h) + env(safe-area-inset-bottom));
-    flex-direction: row; justify-content: space-around; padding: 4px 6px env(safe-area-inset-bottom);
+    top: auto; right: 0; width: auto; height: calc(var(--nav-h) + var(--sa-bottom));
+    flex-direction: row; justify-content: space-around; padding: 4px 6px var(--sa-bottom);
     border-right: none; border-top: 1px solid var(--border);
   }
   .sidebar .logo, .sidebar .grow { display: none; }
   .sidebar .tab { flex: 1; max-width: 90px; height: 52px; }
   .status-dot { order: 9; width: 36px; height: 52px; }
-  main { margin-left: 0; padding: calc(12px + env(safe-area-inset-top)) 12px calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); }
-  .toast { left: 50%; bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom)); }
+  main { margin-left: 0; padding: calc(12px + var(--sa-top)) 12px calc(var(--nav-h) + 16px + var(--sa-bottom)); }
+  .toast { left: 50%; bottom: calc(var(--nav-h) + 12px + var(--sa-bottom)); }
   .cfg { grid-template-columns: 1fr; }
   .cfg-nav { position: static; }
   .cfg-nav button { padding: 13px 10px; }
@@ -451,11 +467,11 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
   .ex { padding: 12px 12px 8px; }
   .v-grid { grid-template-columns: auto 1fr; }
   .v-gloss { grid-column: 1 / -1; padding-bottom: 4px; }
-  .sel-bar { left: 8px; right: 8px; bottom: calc(var(--nav-h) + 8px + env(safe-area-inset-bottom)); flex-wrap: wrap; gap: 8px; }
+  .sel-bar { left: 8px; right: 8px; bottom: calc(var(--nav-h) + 8px + var(--sa-bottom)); flex-wrap: wrap; gap: 8px; }
   .sel-bar #deckName { flex-basis: 100%; order: 3; }
   .sel-bar #toDeck { flex: 1; }
-  .has-sel main { padding-bottom: calc(var(--nav-h) + 150px + env(safe-area-inset-bottom)); }
-  .has-sel .toast { bottom: calc(var(--nav-h) + 140px + env(safe-area-inset-bottom)); }
+  .has-sel main { padding-bottom: calc(var(--nav-h) + 150px + var(--sa-bottom)); }
+  .has-sel .toast { bottom: calc(var(--nav-h) + 140px + var(--sa-bottom)); }
   .ex .sentence { font-size: calc(var(--jp-size) - 2px); }
   .text-out { padding: 12px; font-size: calc(var(--jp-size) - 2px); }
   .settings label.inline { align-items: flex-start; }
@@ -466,17 +482,10 @@ kbd { font-family: var(--ui); font-size: 11px; opacity: .7; }
   .study { gap: 10px; padding-bottom: 84px; }
   .card { padding: 20px 14px; min-height: 45vh; }
   .card .sentence { font-size: calc(var(--jp-size) + 1px); }
-  .answer-row { position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + env(safe-area-inset-bottom)); z-index: 3; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--border); }
+  .answer-row { position: fixed; left: 0; right: 0; bottom: calc(var(--nav-h) + var(--sa-bottom)); z-index: 3; padding: 8px; background: var(--surface); border-top: 1px solid var(--border); }
   .answer-row button { min-height: 60px; font-size: 16px; }
   #showAnswer { flex: 1; }
   kbd { display: none; }
-}
-/* Android's WebView draws under the gesture bar but reports no safe-area inset.
-   Only the phone layout has the bottom bar; wider screens keep the side rail. */
-@media (max-width: 600px) {
-  .android .sidebar { height: calc(var(--nav-h) + 24px); padding-bottom: 24px; }
-  .android .answer-row { bottom: calc(var(--nav-h) + 24px); }
-  .android main { padding-bottom: calc(var(--nav-h) + 40px); }
-  .android .sel-bar { bottom: calc(var(--nav-h) + 32px); }
-  .android.has-sel main, .android .has-sel main { padding-bottom: calc(var(--nav-h) + 180px); }
+  /* Segmented choices fill the width in a grid instead of running off the screen. */
+  .seg { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
 }

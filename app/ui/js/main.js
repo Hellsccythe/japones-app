@@ -8,8 +8,10 @@ import * as estudar from './estudar.js';
 import * as texto from './texto.js';
 import * as config from './config.js';
 import * as setup from './setup.js';
+import * as insets from './insets.js';
 
 document.documentElement.classList.toggle('android', isAndroid);
+insets.init();
 
 // Icons named in the markup (data-icon) go in front of the label.
 document.querySelectorAll('[data-icon]').forEach((el) => el.insertAdjacentHTML('afterbegin', icon(el.dataset.icon)));

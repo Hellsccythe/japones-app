@@ -3,6 +3,12 @@
 As notas de cada versão saem daqui para a página de releases do GitHub
 (a seção `## [x.y.z]` que bate com a tag `vx.y.z`).
 
+## [Não lançado]
+
+- **Primeiros passos perguntam como usar a IA**: baixar a IA local, usar o OpenRouter ou o Claude com a sua chave, ou “Agora não”. No PC a IA local vem sugerida; no celular nada vem marcado e a instalação espera a resposta. Dá para mudar depois em Configurações › IA.
+- Tamanhos abaixo de 1 GB aparecem em MB (antes, “0,0 GB”).
+- **Android**: o app respeita a barra de status, o notch e a barra de gestos (as janelas e a busca não ficam mais por baixo deles), e as opções de Configurações › IA cabem na tela do celular.
+
 ## [0.2.0]
 
 Interface nova (v2). Esta versão sai só para Windows; o Android continua em preparação.
