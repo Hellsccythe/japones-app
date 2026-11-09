@@ -12,7 +12,7 @@ App em Rust (Tauri 2), para Windows e Android, para estudar japonês a partir de
 - **Temas claro e escuro** (ou o do sistema), tamanho ajustável do japonês e navegação lateral no PC / barra inferior no celular.
 - **Dicionário**: JMdict (significados e tipo do verbo).
 - **Anki com teste de conexão**: em Configurações › Anki, **Testar conexão** diz se o Anki está aberto e se falta o add-on AnkiConnect (código `2055492159`), com o passo a passo; sempre dá para salvar um `.apkg`.
-- **PC e Android**: a mesma interface se ajusta à tela do celular. Na primeira vez, **Instalar o recomendado** baixa frases, dicionário, uma voz e o modelo de IA certo para a memória do aparelho, com uma barra só e pausa; ou use o Claude em vez de baixar a IA. Se faltar algo depois, o app abre uma configuração rápida daquele item.
+- **PC e Android**: a mesma interface se ajusta à tela do celular. Na primeira vez, **Instalar o recomendado** baixa frases, dicionário, uma voz e o modelo de IA certo para a memória do aparelho, com uma barra só e pausa, e pergunta como você quer usar a IA: local, OpenRouter, Claude ou agora não (no celular nada vem marcado). Se faltar algo depois, o app abre uma configuração rápida daquele item.
 
 ## Baixar
 

@@ -1,10 +1,11 @@
 // First run ("Primeiros passos": install the recommended set with one progress bar)
 // and the quick setup modal opened when something is missing.
 
-import { $, invoke, listen, toast, busy, gb, escapeHtml } from './api.js';
+import { $, invoke, listen, toast, busy, gb, escapeHtml, isAndroid } from './api.js';
+import { size } from './render.js';
 import { refreshStatus } from './status.js';
 import { getLoaded, saveSettingsNow, openSection, renderModels } from './config.js';
-import { setupSummary, pendingItems, overallProgress } from './install.js';
+import { setupSummary, pendingItems, overallProgress, planFor, initialAiChoice } from './install.js';
 
 const PAUSED = 'download:paused';
 const isPaused = (err) => String(err).includes(PAUSED);
@@ -16,10 +17,15 @@ const ITEM_TEXT = {
 };
 const itemText = (item, rec) => (item.id === 'model' ? `IA local: ${rec.model_name}` : ITEM_TEXT[item.id]);
 
-/** Last `recommended_setup()`; with "usar o Claude" the model is left out. */
+/** Last `recommended_setup()`; the model is in the plan only when the local AI is chosen. */
 let rec = null;
-let useClaude = false;
-const plan = () => (rec ? { ...rec, items: rec.items.filter((i) => !(useClaude && i.id === 'model')) } : null);
+/** "Como você quer usar a IA?": 'local' | 'openrouter' | 'claude' | 'none' | null (not answered); undefined = not set up yet. */
+let aiChoice;
+/** Online AIs whose key passed "Testar e usar" in this setup. */
+const keyOk = new Set();
+const ONLINE = ['openrouter', 'claude'];
+const plan = () => (rec ? planFor(rec, aiChoice) : null);
+const needsKey = () => ONLINE.includes(aiChoice) && !keyOk.has(aiChoice);
 
 // ---------- progress of the install ----------
 const run = { active: false, paused: false, items: [], finished: new Set(), current: null, done: 0, sub: {} };
@@ -51,7 +57,30 @@ async function installItem(item) {
   paintProgress();
 }
 
+/** The key field and result line of an online AI option. */
+function keyBox(provider) {
+  const box = $(`#setupAi .ai-key[data-for=${provider}]`);
+  return { input: box.querySelector('input'), result: box.querySelector('[data-result]') };
+}
+
+/** Saves the AI choice that needs no download: "Agora não" turns the AI off, a local model already on disk is used. */
+async function applyAiChoice() {
+  const s = getLoaded();
+  if (aiChoice === 'none' && s.llm_provider !== 'off') await saveSettingsNow({ llm_provider: 'off' });
+  if (aiChoice === 'local' && s.llm_provider !== 'local') await saveSettingsNow({ llm_provider: 'local', local_model: rec.model_id });
+}
+
 async function install() {
+  if (aiChoice == null) {
+    toast('Escolha como usar a IA (ou “Agora não”).', true);
+    $('#setupAi input').focus();
+    return;
+  }
+  if (needsKey()) {
+    const { input, result } = keyBox(aiChoice);
+    if (!(await testAndUse(aiChoice, input.value, result))) return input.focus();
+    keyOk.add(aiChoice);
+  }
   const p = plan();
   const todo = pendingItems(p);
   if (todo.some((i) => i.id === 'voice') && !getLoaded().voice_terms_accepted && !$('#setupTermsOk').checked) {
@@ -70,6 +99,7 @@ async function install() {
     }
     if (run.paused) paintProgress('Pausado. O download continua de onde parou.');
     else {
+      await applyAiChoice();
       paintProgress('Pronto! Tudo instalado.');
       toast('Instalação concluída.');
     }
@@ -100,19 +130,40 @@ function pause() {
 }
 
 // ---------- the overlay ----------
-async function renderSetup() {
-  rec = await invoke('recommended_setup');
+/** Paints the plan for the current AI choice (no Tauri calls). */
+function paintPlan() {
   const p = plan();
   $('#setupSummary').textContent = setupSummary(p);
   $('#setupItems').innerHTML = p.items
     .map(
-      (i) => `<li class="${i.done ? 'done' : ''}"><span>${escapeHtml(itemText(i, rec))}</span><small>${i.done ? 'instalado' : gb(i.bytes)}</small></li>`,
+      (i) => `<li class="${i.done ? 'done' : ''}"><span>${escapeHtml(itemText(i, rec))}</span><small>${i.done ? 'instalado' : size(i.bytes)}</small></li>`,
     )
     .join('');
   const needsTerms = pendingItems(p).some((i) => i.id === 'voice') && !getLoaded().voice_terms_accepted;
   $('#setupTerms').classList.toggle('hidden', !needsTerms);
-  const nothingLeft = !pendingItems(p).length;
-  $('#setupInstall').disabled = nothingLeft;
+
+  const model = rec.items.find((i) => i.id === 'model');
+  $('#setupAiLocal').textContent = model?.done
+    ? `${rec.model_name}, já baixado. Roda neste aparelho, offline.`
+    : `${rec.model_name}, ${size(model?.bytes ?? 0)}. Roda neste aparelho, offline.`;
+  for (const radio of document.querySelectorAll('#setupAi input[type=radio]')) radio.checked = radio.value === aiChoice;
+  for (const box of document.querySelectorAll('#setupAi .ai-key')) box.classList.toggle('hidden', box.dataset.for !== aiChoice);
+
+  // Unanswered on the phone: the button waits for a choice.
+  const provider = getLoaded().llm_provider;
+  const changesAi = needsKey() || (aiChoice === 'none' && provider !== 'off') || (aiChoice === 'local' && provider !== 'local');
+  $('#setupInstall').disabled = aiChoice == null || (!pendingItems(p).length && !changesAi);
+}
+
+async function renderSetup() {
+  rec = await invoke('recommended_setup');
+  if (aiChoice === undefined) {
+    const modelDone = !!rec.items.find((i) => i.id === 'model')?.done;
+    aiChoice = initialAiChoice({ provider: getLoaded().llm_provider, modelDone, android: isAndroid });
+    // An online AI already set up counts as tested.
+    if (ONLINE.includes(aiChoice)) keyOk.add(aiChoice);
+  }
+  paintPlan();
   $('#setupPause').disabled = false;
 
   // The manual checklist ("Escolher eu mesmo").
@@ -124,6 +175,8 @@ async function renderSetup() {
 }
 
 export function openSetup() {
+  aiChoice = undefined;
+  keyOk.clear();
   $('#setup').classList.remove('hidden');
   renderSetup().catch((e) => toast(String(e), true));
 }
@@ -139,9 +192,6 @@ function goToSettings(section) {
   closeSetup();
   openSection(section);
 }
-
-/** Checks a Claude key; on success it's saved and Claude becomes the AI. */
-const testAndUseClaude = (key, out) => testAndUse('claude', key, out);
 
 const PROVIDERS = {
   claude: { name: 'o Claude', test: 'test_claude', field: 'anthropic_api_key' },
@@ -190,7 +240,7 @@ export async function openQuickSetup(item) {
     $('#quickBody').innerHTML = `<p class="hint bad">${escapeHtml(String(err))}</p>`;
     return;
   }
-  const size = (id) => rec.items.find((i) => i.id === id)?.bytes ?? 0;
+  const bytesOf = (id) => rec.items.find((i) => i.id === id)?.bytes ?? 0;
   // The AI may just be off (or set to Claude) with the model already on disk.
   const modelDone = rec.items.find((i) => i.id === 'model')?.done;
   const bar = '<div class="quick-progress hidden"><progress max="1" value="0"></progress><small class="hint"></small></div>';
@@ -203,7 +253,7 @@ export async function openQuickSetup(item) {
           modelDone
             ? `<div><strong>Usar ${escapeHtml(rec.model_name)}</strong><small>Já está baixado neste aparelho; roda offline.</small></div>
         <button type="button" data-q="model">Usar</button>`
-            : `<div><strong>Baixar ${escapeHtml(rec.model_name)}</strong><small>Roda neste aparelho, offline. ${gb(size('model'))}.</small></div>
+            : `<div><strong>Baixar ${escapeHtml(rec.model_name)}</strong><small>Roda neste aparelho, offline. ${size(bytesOf('model'))}.</small></div>
         <button type="button" data-q="model">Baixar</button>`
         }
       </div>
@@ -224,7 +274,7 @@ export async function openQuickSetup(item) {
       </div>`,
     voz: () =>
       rec.items.some((i) => i.id === 'voice')
-        ? `<p>Para ouvir as frases e pôr áudio nos cards. ${gb(size('voice'))}.</p>
+        ? `<p>Para ouvir as frases e pôr áudio nos cards. ${size(bytesOf('voice'))}.</p>
           <div class="terms"><p>As vozes VOICEVOX são livres para uso comercial e não comercial; ao publicar um áudio, dê o crédito da voz.
             <a href="https://github.com/VOICEVOX/voicevox_vvm#voicevox-音声モデル-利用規約" target="_blank">ler termos</a></p>
             <label class="sw-row"><span>Li e aceito os termos</span><span class="switch"><input type="checkbox" id="quickTerms"${
@@ -233,9 +283,9 @@ export async function openQuickSetup(item) {
           <div class="row"><button type="button" data-q="voice">Baixar a voz</button></div>${bar}`
         : `<p>A voz embutida não está disponível neste aparelho. No PC, dá para usar o programa VOICEVOX aberto.</p>
           <div class="row"><button type="button" data-q="settings-voz" class="ghost">Abrir Configurações › Voz</button></div>`,
-    frases: () => `<p>Frases reais com tradução, para buscar exemplos de qualquer palavra. ~${gb(size('tatoeba'))}.</p>
+    frases: () => `<p>Frases reais com tradução, para buscar exemplos de qualquer palavra. ${size(bytesOf('tatoeba'))}.</p>
       <div class="row"><button type="button" data-q="tatoeba">Baixar as frases</button></div>${bar}`,
-    dict: () => `<p>Significado e leitura das palavras. ~${gb(size('dict'))}.</p>
+    dict: () => `<p>Significado e leitura das palavras. ${size(bytesOf('dict'))}.</p>
       <div class="row"><button type="button" data-q="dict">Baixar o dicionário</button></div>${bar}`,
   }[item]();
   $('#quickBody').innerHTML = body;
@@ -265,7 +315,7 @@ async function quickAction(btn) {
   }
   if (act === 'claude') {
     return busy(btn, async () => {
-      if (await testAndUseClaude($('#quickKey').value, $('#quickKeyResult'))) setTimeout(closeQuick, 800);
+      if (await testAndUse('claude', $('#quickKey').value, $('#quickKeyResult'))) setTimeout(closeQuick, 800);
     });
   }
   if (act === 'openrouter') {
@@ -330,18 +380,24 @@ export function init() {
   $('#setupInstall').addEventListener('click', () => install());
   $('#setupPause').addEventListener('click', pause);
   $('#setupManual').addEventListener('click', () => $('#setupSteps').classList.toggle('hidden'));
-  $('#setupClaude').addEventListener('click', () => {
-    $('#setupClaudeBox').classList.toggle('hidden');
-    $('#setupClaudeKey').focus();
+  $('#setupAi').addEventListener('change', (e) => {
+    if (e.target.name !== 'setupAi' || run.active) return;
+    aiChoice = e.target.value;
+    paintPlan();
+    if (needsKey()) keyBox(aiChoice).input.focus();
   });
-  $('#setupClaudeTest').addEventListener('click', (e) =>
-    busy(e.currentTarget, async () => {
-      if (await testAndUseClaude($('#setupClaudeKey').value, $('#setupClaudeResult'))) {
-        useClaude = true;
-        await renderSetup();
+  $('#setupAi').addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-test]');
+    if (!btn) return;
+    const provider = btn.dataset.test;
+    const { input, result } = keyBox(provider);
+    busy(btn, async () => {
+      if (await testAndUse(provider, input.value, result)) {
+        keyOk.add(provider);
+        paintPlan();
       }
-    }),
-  );
+    });
+  });
 
   $('#setupSteps').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-act]');

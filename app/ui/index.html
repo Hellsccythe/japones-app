@@ -366,6 +366,30 @@
           <label class="sw-row"><span>Li e aceito os termos das vozes</span>
             <span class="switch"><input type="checkbox" id="setupTermsOk"><span></span></span></label>
         </div>
+        <fieldset id="setupAi" class="ai-choice">
+          <legend>Como você quer usar a IA?</legend>
+          <p class="hint">A IA gera frases novas e traduz o vocabulário. Dá para mudar depois em Configurações › IA.</p>
+          <label class="ai-opt"><input type="radio" name="setupAi" value="local">
+            <span><strong>Baixar a IA local</strong><small id="setupAiLocal">Roda neste aparelho, offline.</small></span></label>
+          <label class="ai-opt"><input type="radio" name="setupAi" value="openrouter">
+            <span><strong>OpenRouter</strong><small>Online, vários modelos (alguns gratuitos) com a sua chave.</small></span></label>
+          <div class="ai-key hidden" data-for="openrouter">
+            <div class="row"><input id="setupOrKey" type="password" placeholder="sk-or-…" aria-label="Chave do OpenRouter" autocomplete="off">
+              <button type="button" class="ghost" data-test="openrouter">Testar e usar</button></div>
+            <small class="hint"><a href="https://openrouter.ai/settings/keys" target="_blank">Criar uma chave</a></small>
+            <small class="hint" data-result></small>
+          </div>
+          <label class="ai-opt"><input type="radio" name="setupAi" value="claude">
+            <span><strong>Claude API</strong><small>Online, com a sua chave da API da Anthropic.</small></span></label>
+          <div class="ai-key hidden" data-for="claude">
+            <div class="row"><input id="setupClaudeKey" type="password" placeholder="sk-ant-…" aria-label="Chave da API do Claude" autocomplete="off">
+              <button type="button" class="ghost" data-test="claude">Testar e usar</button></div>
+            <small class="hint"><a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a></small>
+            <small class="hint" data-result></small>
+          </div>
+          <label class="ai-opt"><input type="radio" name="setupAi" value="none">
+            <span><strong>Agora não</strong><small>O app funciona sem IA; as frases vêm só do Tatoeba.</small></span></label>
+        </fieldset>
         <div id="setupProgress" class="hidden">
           <progress id="setupBar" max="1" value="0"></progress>
           <small id="setupNow" class="hint"></small>
@@ -378,17 +402,6 @@
 
       <div class="row alt">
         <button type="button" id="setupManual" class="ghost" data-icon="sliders">Escolher eu mesmo</button>
-        <button type="button" id="setupClaude" class="link" data-icon="cloud">Usar o Claude em vez de baixar a IA</button>
-      </div>
-
-      <div id="setupClaudeBox" class="claude-box hidden">
-        <p class="hint">O Claude roda online e precisa de uma chave da API da Anthropic.
-          <a href="https://console.anthropic.com/settings/keys" target="_blank">Criar uma chave</a></p>
-        <div class="row">
-          <input id="setupClaudeKey" type="password" placeholder="sk-ant-…" aria-label="Chave da API do Claude" autocomplete="off">
-          <button type="button" id="setupClaudeTest" class="ghost">Testar</button>
-        </div>
-        <small id="setupClaudeResult" class="hint"></small>
       </div>
 
       <ol id="setupSteps" class="steps hidden">

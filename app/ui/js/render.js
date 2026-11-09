@@ -9,6 +9,9 @@ export function escapeHtml(s) {
 /** Bytes as "3,5 GB". */
 export const gb = (bytes) => (bytes / 1e9).toLocaleString('pt-BR', { maximumFractionDigits: 1, minimumFractionDigits: 1 }) + ' GB';
 
+/** A download size: whole MB under 1 GB ("36 MB"), else GB ("3,3 GB"). */
+export const size = (bytes) => (bytes < 1e9 ? `${Math.round(bytes / 1e6)} MB` : gb(bytes));
+
 const cls = (c) => (CLASSES.includes(c) ? c : 'other');
 
 /** Furigana segments as HTML with `<ruby>` on the ones that have a reading. */
