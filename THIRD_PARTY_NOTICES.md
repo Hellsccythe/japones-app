@@ -7,13 +7,13 @@ Ele inclui ou baixa os componentes abaixo, cada um com a sua licença.
 
 | Componente | Licença | Onde |
 |---|---|---|
-| Bibliotecas Rust (≈650 crates) | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, MPL-2.0 e outras permissivas | Lista completa com os textos em `app/ui/licenses.html` (no app: Configurações › Sobre › Licenças de software). Gerada com `cargo about generate app/licenses.hbs -o app/ui/licenses.html`. |
+| Bibliotecas Rust (≈650 crates) | MIT, Apache-2.0, BSD, ISC, Zlib, Unicode-3.0, MPL-2.0 e outras permissivas | Lista completa com os textos em `client/licenses.html` (no app: Configurações › Sobre › Licenças de software). Gerada com `cargo about generate server/app/licenses.hbs -o client/licenses.html`. |
 | Runtime do Visual C++ (`msvcp140`, `msvcp140_1`, `vcruntime140`, `vcruntime140_1`, `vcomp140`) | Microsoft Software License Terms (arquivos redistribuíveis) | Só no instalador do Windows, ao lado do app; não fica no repositório |
 | llama.cpp (compilado junto, via `llama-cpp-2`) | MIT | idem |
 | VOICEVOX CORE 0.17 (via crate `voicevox_core`) | MIT | idem |
 | Dicionário mecab-ipadic 2.7.0 (embutido pelo `lindera-ipadic`) | Aviso da NAIST/ICOT, abaixo | leituras e furigana |
-| Noto Serif JP (subset embutido nos PDFs) | SIL Open Font License 1.1, abaixo | `crates/pdf/fonts/` |
-| Ícones no estilo [Lucide](https://lucide.dev) (desenhos de linha, em SVG inline) | ISC, abaixo | `app/ui/js/icons.js` |
+| Noto Serif JP (subset embutido nos PDFs) | SIL Open Font License 1.1, abaixo | `server/crates/pdf/fonts/` |
+| Ícones no estilo [Lucide](https://lucide.dev) (desenhos de linha, em SVG inline) | ISC, abaixo | `client/js/icons.js` |
 
 ## Baixados pelo usuário dentro do app (não estão no repositório nem no instalador)
 
@@ -115,7 +115,7 @@ above as far as the program is concerned.
 ## Noto Serif JP
 
 © 2017-2024 Adobe (http://www.adobe.com/). Noto is a trademark of Google Inc.
-O subset foi feito com `spikes/fonts/subset.py` a partir de `notofonts/noto-cjk` (Serif/SubsetOTF/JP).
+O subset foi feito com `scripts/fonts/subset.py` a partir de `notofonts/noto-cjk` (Serif/SubsetOTF/JP).
 
 ```
 This Font Software is licensed under the SIL Open Font License,
@@ -216,7 +216,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## Lucide (ícones)
 
-Os ícones da interface seguem os desenhos do Lucide, redesenhados como paths SVG em `app/ui/js/icons.js`.
+Os ícones da interface seguem os desenhos do Lucide, redesenhados como paths SVG em `client/js/icons.js`.
 
 ```
 ISC License

@@ -6,22 +6,20 @@
 
 # Android project: committed, except build output and native libraries
 # (the Rust build and Gradle put those in jniLibs).
-app/gen/android/app/src/main/jniLibs/
-app/gen/android/buildSrc/build/
-app/gen/android/buildSrc/.gradle/
-app/gen/android/.kotlin/
+server/app/gen/android/app/src/main/jniLibs/
+server/app/gen/android/buildSrc/build/
+server/app/gen/android/buildSrc/.gradle/
+server/app/gen/android/.kotlin/
 
 # Signing keys never go in the repository (CI gets them from secrets).
 *.jks
 *.keystore
 keystore.properties
 
-# Experiments: build output, logs and model outputs.
-spikes/**/target/
-spikes/*.log
-spikes/*.done
-spikes/llm/*.jsonl
-spikes/llm/results/
+# Helper scripts: build output and model outputs.
+scripts/**/target/
+scripts/llm-eval/*.jsonl
+scripts/llm-eval/results/
 
 # Tauri CLI from npm
 node_modules/
@@ -29,5 +27,5 @@ node_modules/
 # Plan execution scratch (superpowers)
 .superpowers/
 
-# Visual C++ runtime copied by app/build.rs; ships in the installer only.
-app/vcredist/
+# Visual C++ runtime copied by server/app/build.rs; ships in the installer only.
+server/app/vcredist/

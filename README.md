@@ -54,13 +54,13 @@ Na primeira vez, abra **Configurações** e clique em:
 
 Os dados ficam na pasta de dados do app (`%APPDATA%\com.japonesapp.desktop`). Para usar outra pasta, defina `JAPONES_APP_DATA`.
 
-Para gerar o instalador (`target/release/bundle/nsis/`), com o Tauri CLI fixado em `app/package.json`:
+Para gerar o instalador (`target/release/bundle/nsis/`), com o Tauri CLI fixado em `server/app/package.json`:
 
 ```bash
-cd app && npm ci && npm run tauri -- build
+cd server/app && npm ci && npm run tauri -- build
 ```
 
-O APK de Android sai de `npm run tauri -- android build --apk --target aarch64` e precisa do JDK 17, do Android SDK e do NDK 28.2 (`NDK_HOME`). O CMake das dependências em C++ não acha o compilador do NDK sozinho: defina `CC_aarch64_linux_android`, `CXX_aarch64_linux_android` e `AR_aarch64_linux_android` com os executáveis de `toolchains/llvm/prebuilt/<sistema>/bin` (veja o passo *Build APK* do workflow de release). No Windows, a CLI do Tauri cria links simbólicos e pede o Modo de Desenvolvedor; sem ele, [`spikes/rebuild-arm64-release.sh`](spikes/rebuild-arm64-release.sh) faz o mesmo build copiando a biblioteca (ajuste os caminhos no começo do script). Sem `app/gen/android/keystore.properties` o APK sai sem assinatura.
+O APK de Android sai de `npm run tauri -- android build --apk --target aarch64` e precisa do JDK 17, do Android SDK e do NDK 28.2 (`NDK_HOME`). O CMake das dependências em C++ não acha o compilador do NDK sozinho: defina `CC_aarch64_linux_android`, `CXX_aarch64_linux_android` e `AR_aarch64_linux_android` com os executáveis de `toolchains/llvm/prebuilt/<sistema>/bin` (veja o passo *Build APK* do workflow de release). No Windows, a CLI do Tauri cria links simbólicos e pede o Modo de Desenvolvedor; sem ele, [`scripts/build-apk.sh`](scripts/build-apk.sh) faz o mesmo build copiando a biblioteca (`scripts/build-apk.sh aarch64 release` para celular, `x86_64 debug` para o emulador; ajuste os caminhos do JDK e do SDK no começo do script). Sem `server/app/gen/android/keystore.properties` o APK de release sai sem assinatura.
 
 ## Publicar uma versão
 
@@ -76,7 +76,7 @@ O workflow [`.github/workflows/release.yml`](.github/workflows/release.yml) gera
    - `ANDROID_KEYSTORE_BASE64`: o resultado de `base64 -w0 japones-release.jks`;
    - `ANDROID_KEYSTORE_PASSWORD`: a senha;
    - `ANDROID_KEY_ALIAS`: `japones`.
-2. Suba a versão em `Cargo.toml` (`[workspace.package]`) e em `app/tauri.conf.json`, e escreva a seção `## [x.y.z]` no [CHANGELOG.md](CHANGELOG.md).
+2. Suba a versão em `Cargo.toml` (`[workspace.package]`) e em `server/app/tauri.conf.json`, e escreva a seção `## [x.y.z]` no [CHANGELOG.md](CHANGELOG.md).
 3. Crie e envie a tag:
 
    ```bash
@@ -115,22 +115,25 @@ cargo run -p jp-cli -- speak "こんにちは" -o oi.wav
 ## Estrutura
 
 ```
-crates/
-  jp-core/    análise morfológica (lindera + IPADIC), lemas, alinhamento de furigana
-  sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, clientes do Claude e do OpenRouter
-  local-llm/  IA local: llama.cpp + gramática JSON, catálogo de modelos
-  assets/     downloads grandes com retomada e SHA-256
-  dict/       JMdict (jmdict-simplified) em SQLite
-  srs/        decks, cards e revisões (FSRS) em study.db, importação de .apkg, backup
-  anki/       AnkiConnect e .apkg (gravador próprio, com agendamento e histórico), mesmo tipo de nota "Japones App"
-  pdf/        PDF com ruby/furigana via Typst, com a fonte Noto Serif JP embutida (subset)
-  tts/        VOICEVOX CORE embutido + catálogo de vozes (gerado) + cliente HTTP do VOICEVOX
-  engine/     orquestração + configurações (usado pela CLI e pelo app)
-cli/          binário `jp`
-app/          Tauri 2: src/main.rs (comandos) + ui/ (HTML/CSS/JS sem bundler)
+client/       interface: index.html, style.css e js/ (módulos ES sem bundler, com testes node --test)
+server/
+  app/        Tauri 2: src/lib.rs (comandos), config, ícones, projeto Android (gen/android)
+  cli/        binário `jp`
+  crates/
+    jp-core/    análise morfológica (lindera + IPADIC), lemas, alinhamento de furigana
+    sentences/  corpus Tatoeba em SQLite com índice por lema, prompt/schema das frases geradas, clientes do Claude e do OpenRouter
+    local-llm/  IA local: llama.cpp + gramática JSON, catálogo de modelos
+    assets/     downloads grandes com retomada e SHA-256
+    dict/       JMdict (jmdict-simplified) em SQLite
+    srs/        decks, cards e revisões (FSRS) em study.db, importação de .apkg, backup
+    anki/       AnkiConnect e .apkg (gravador próprio, com agendamento e histórico), mesmo tipo de nota "Japones App"
+    pdf/        PDF com ruby/furigana via Typst, com a fonte Noto Serif JP embutida (subset)
+    tts/        VOICEVOX CORE embutido + catálogo de vozes (gerado) + cliente HTTP do VOICEVOX
+    engine/     orquestração + configurações (usado pela CLI e pelo app)
+scripts/      build do APK sem Modo de Desenvolvedor, subset da fonte, catálogo de vozes, avaliação da IA
 ```
 
-Testes: `cargo test --workspace`. Página de licenças das dependências: `cargo about generate app/licenses.hbs -o app/ui/licenses.html` (precisa de `cargo install cargo-about --features cli`). Prévia do layout do PDF: `cargo run -p pdf --example preview -- prev.png`.
+Testes: `cargo test --workspace`. Página de licenças das dependências: `cargo about generate server/app/licenses.hbs -o client/licenses.html` (precisa de `cargo install cargo-about --features cli`). Prévia do layout do PDF: `cargo run -p pdf --example preview -- prev.png`.
 
 ## Como funciona
 
@@ -156,5 +159,5 @@ O código é distribuído sob **MIT OR Apache-2.0**, à sua escolha ([LICENSE-MI
 
 - Tatoeba: CC BY 2.0 FR. As frases exportadas mantêm o ID `tatoeba #N`.
 - JMdict: © EDRDG, CC BY-SA 4.0.
-- Noto Serif JP (embutida nos PDFs, em subset): SIL Open Font License 1.1, ver `crates/pdf/fonts/OFL.txt`.
+- Noto Serif JP (embutida nos PDFs, em subset): SIL Open Font License 1.1, ver `server/crates/pdf/fonts/OFL.txt`.
 - VOICEVOX: o ONNX Runtime da VOICEVOX e os modelos de voz permitem uso comercial e redistribuição embutida, proíbem engenharia reversa e exigem crédito. Cada voz tem seus termos (ex.: `VOICEVOX:ずんだもん`); algumas são só não comerciais. A tela de Áudio lista o crédito e os termos de cada voz baixada, e o app põe o crédito nos cards.
