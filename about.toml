@@ -1,6 +1,6 @@
 # Third-party licenses page for the app (Configurações › Sobre). Only permissive
 # licenses are accepted, so this fails if a GPL/AGPL dependency is added:
-#   cargo about generate app/licenses.hbs -o app/ui/licenses.html
+#   cargo about generate server/app/licenses.hbs -o client/licenses.html
 accepted = [
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",

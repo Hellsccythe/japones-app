@@ -1,6 +1,6 @@
 # Builds the Windows installer and, when the repository variable BUILD_ANDROID
 # is "true", the Android APK. A `v*` tag (matching the
-# version in app/tauri.conf.json) also publishes them as a GitHub Release, with
+# version in server/app/tauri.conf.json) also publishes them as a GitHub Release, with
 # the notes from that version's section of CHANGELOG.md. Running it by hand
 # (Actions › Release › Run workflow) or changing this file in a pull request
 # only builds, for testing.
@@ -35,7 +35,7 @@ jobs:
       - id: v
         name: Check tag and versions
         run: |
-          app=$(jq -r .version app/tauri.conf.json)
+          app=$(jq -r .version server/app/tauri.conf.json)
           cargo=$(grep -m1 '^version = ' Cargo.toml | cut -d'"' -f2)
           [ "$app" = "$cargo" ] || { echo "::error::tauri.conf.json ($app) e Cargo.toml ($cargo) com versões diferentes"; exit 1; }
           if [ "$GITHUB_REF_TYPE" = tag ] && [ "$GITHUB_REF_NAME" != "v$app" ]; then
@@ -56,13 +56,13 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: server/app/package-lock.json
       - run: rustup toolchain install stable --profile minimal
       - uses: Swatinem/rust-cache@v2
         with:
           key: windows
       - name: Build installer
-        working-directory: app
+        working-directory: server/app
         run: |
           npm ci
           npm run tauri -- build
@@ -91,7 +91,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: server/app/package-lock.json
       - name: Android NDK
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;$NDK_VERSION" "platforms;android-37.0" > /dev/null
@@ -113,10 +113,10 @@ jobs:
             echo "::warning::Sem secrets de assinatura: o APK sai sem assinatura (não instala)."
             exit 0
           fi
-          echo "$KEYSTORE" | base64 -d > app/gen/android/release.jks
-          printf 'storeFile=release.jks\npassword=%s\nkeyAlias=%s\n' "$PASSWORD" "$ALIAS" > app/gen/android/keystore.properties
+          echo "$KEYSTORE" | base64 -d > server/app/gen/android/release.jks
+          printf 'storeFile=release.jks\npassword=%s\nkeyAlias=%s\n' "$PASSWORD" "$ALIAS" > server/app/gen/android/keystore.properties
       - name: Build APK
-        working-directory: app
+        working-directory: server/app
         env:
           # C/C++ dependencies (llama.cpp, Open JTalk) are built with CMake for API 24.
           ANDROID_PLATFORM: "24"
@@ -131,9 +131,9 @@ jobs:
       - name: Rename
         run: |
           mkdir dist
-          apk=$(find app/gen/android/app/build/outputs/apk -name '*-release*.apk' | head -1)
+          apk=$(find server/app/gen/android/app/build/outputs/apk -name '*-release*.apk' | head -1)
           cp "$apk" "dist/Japones-App_${{ needs.version.outputs.version }}_android-arm64.apk"
-          rm -f app/gen/android/release.jks app/gen/android/keystore.properties
+          rm -f server/app/gen/android/release.jks server/app/gen/android/keystore.properties
       - uses: actions/upload-artifact@v4
         with:
           name: android

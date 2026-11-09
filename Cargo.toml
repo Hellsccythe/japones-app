@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["crates/*", "cli", "app"]
+members = ["server/crates/*", "server/cli", "server/app"]
 
 [workspace.package]
 edition = "2021"
@@ -35,16 +35,16 @@ tar = "0.4"
 # RAM total, to pick the local model (MIT).
 sysinfo = { version = "0.40", default-features = false, features = ["system"] }
 
-jp-core = { path = "crates/jp-core" }
-dict = { path = "crates/dict" }
-sentences = { path = "crates/sentences" }
-anki = { path = "crates/anki" }
-pdf = { path = "crates/pdf" }
-tts = { path = "crates/tts" }
-engine = { path = "crates/engine" }
-local-llm = { path = "crates/local-llm" }
-assets = { path = "crates/assets" }
-srs = { path = "crates/srs" }
+jp-core = { path = "server/crates/jp-core" }
+dict = { path = "server/crates/dict" }
+sentences = { path = "server/crates/sentences" }
+anki = { path = "server/crates/anki" }
+pdf = { path = "server/crates/pdf" }
+tts = { path = "server/crates/tts" }
+engine = { path = "server/crates/engine" }
+local-llm = { path = "server/crates/local-llm" }
+assets = { path = "server/crates/assets" }
+srs = { path = "server/crates/srs" }
 
 [profile.release]
 # Symbols would add ~25 MB to the Android library (JNI exports stay in .dynsym).

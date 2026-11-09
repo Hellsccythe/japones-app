@@ -20,4 +20,4 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test --workspace
       - name: UI tests
-        run: node --test "app/ui/js/*.test.js"
+        run: node --test "client/js/*.test.js"
